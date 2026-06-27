@@ -1,0 +1,168 @@
+.document-card:hover {
+    transform: none;
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
+}
+
+.document-sheet {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    background: white;
+    padding: 15mm;
+    color: black;
+}
+
+.document-header {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.document-header h2 {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 24px;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.college-name {
+    font-size: 15px;
+    line-height: 1.4;
+    font-weight: bold;
+    margin-bottom: 35px;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+
+.document-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 40px;
+}
+
+.document-info p,
+.report-signatures p {
+    font-size: 18px;
+    line-height: 1.4;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.report-table {
+    width: 100%;
+    margin-top: 25px;
+    border-collapse: collapse;
+    min-width: unset;
+}
+
+.report-table th,
+.report-table td {
+    border: 1px solid black;
+    padding: 4px;
+    font-family: 'Times New Roman', Times, serif;
+    text-align: center;
+    font-size: 12px;
+}
+
+.report-table th {
+    background: #f8f8f8;
+}
+
+.report-signatures {
+    margin-top: 70px;
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+}
+
+.document-sheet .table-wrapper {
+    overflow-x: visible;
+}
+
+.report-table th:nth-child(1),
+.report-table td:nth-child(1) {
+    width: 5%;
+}
+
+.report-table th:nth-child(2),
+.report-table td:nth-child(2) {
+    width: 45%;
+}
+
+.report-table th:nth-child(3),
+.report-table td:nth-child(3) {
+    width: 20%;
+}
+
+.report-table th:nth-child(4),
+.report-table td:nth-child(4) {
+    width: 10%;
+}
+
+.report-table th:nth-child(5),
+.report-table td:nth-child(5) {
+    width: 10%;
+}
+
+.report-table th:nth-child(6),
+.report-table td:nth-child(6) {
+    width: 10%;
+}
+
+.document-sheet .table-wrapper {
+    overflow-x: hidden;
+}
+
+.fake-input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 11px;
+    border-radius: 10px;
+    border: 1px solid #dcdcdc;
+    background: white;
+    font-size: 14px;
+    color: #334155;
+}
+
+@media(max-width:1200px) {
+    .document-sheet {
+        width: 100%;
+        padding: 20mm 15mm;
+    }
+}
+
+@media print {
+
+    body {
+        background: white;
+    }
+
+    header,
+    .aside,
+    .top-panel,
+    .filter-card,
+    .footer {
+        display: none;
+    }
+
+    .main {
+        padding: 0;
+    }
+
+    .main-content {
+        gap: 0;
+    }
+
+    .document-sheet {
+        width: 100%;
+        min-height: auto;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        background: white;
+    }
+
+    .report-table {
+        width: 100%;
+    }
+}
