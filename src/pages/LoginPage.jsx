@@ -12,7 +12,7 @@ function LoginPage() {
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    // Простая проверка (как было раньше)
+  
     if (login === 'admin' && password === 'admin') {
       localStorage.setItem('isAuth', 'true')
       localStorage.setItem('username', login)

@@ -3,7 +3,7 @@ import Layout from '../components/Layout'
 import {
     loadGroupsFull, loadTeachers, loadStudents, saveGroups, saveTeachers, saveStudents,
     loadDisciplinesByGroup, saveDisciplinesByGroup
-} from '../data/loadData'   // ← обрати внимание, было из data
+} from '../data/loadData'
 import '../styles/style.css'
 import '../styles/settings.css'
 
@@ -13,15 +13,15 @@ function SettingsPage() {
     const [students, setStudents] = useState([])
     const [disciplinesByGroup, setDisciplinesByGroup] = useState({})
 
-    // ========== ГРУППЫ ==========
+    // ГРУППЫ
     const [newGroup, setNewGroup] = useState({ name: '', speciality: '', course: '' })
     const [editingGroup, setEditingGroup] = useState(null)
 
-    // ========== ПРЕПОДАВАТЕЛИ ==========
+    //ПРЕПОДАВАТЕЛИ
     const [newTeacher, setNewTeacher] = useState({ name: '', direction: 'РПО', notes: '' })
     const [editingTeacher, setEditingTeacher] = useState(null)
 
-    // ========== ДИСЦИПЛИНЫ ==========
+    //ДИСЦИПЛИНЫ
     const [selectedGroupForDiscipline, setSelectedGroupForDiscipline] = useState('')
     const [newDiscipline, setNewDiscipline] = useState({
         name: '',
@@ -31,13 +31,13 @@ function SettingsPage() {
     })
     const [editingDiscipline, setEditingDiscipline] = useState(null)
 
-    // ========== СТУДЕНТЫ ==========
+    //СТУДЕНТЫ
     const [newStudent, setNewStudent] = useState({ name: '', group: '' })
     const [editingStudent, setEditingStudent] = useState(null)
 
     const [message, setMessage] = useState({ text: '', type: '' })
 
-    // ========== ОБРАБОТЧИК ENTER ДЛЯ ВСЕХ ПОЛЕЙ ==========
+
     const handleKeyDown = (e, callback) => {
         if (e.key === 'Enter') {
             e.preventDefault()
@@ -70,7 +70,7 @@ function SettingsPage() {
         setTimeout(() => setMessage({ text: '', type: '' }), 3000)
     }
 
-    // ========== ГРУППЫ ==========
+    // ГРУППЫ
     const addGroup = () => {
         if (newGroup.name.trim() && newGroup.speciality.trim() && newGroup.course) {
             setGroups([...groups, {
@@ -103,7 +103,7 @@ function SettingsPage() {
         setEditingGroup(null)
     }
 
-    // ========== ПРЕПОДАВАТЕЛИ ==========
+    //  ПРЕПОДАВАТЕЛИ 
     const addTeacher = () => {
         if (newTeacher.name.trim()) {
             setTeachers([...teachers, {
@@ -143,7 +143,7 @@ function SettingsPage() {
         setEditingTeacher(null)
     }
 
-    // ========== ДИСЦИПЛИНЫ ==========
+    //  ДИСЦИПЛИНЫ
     const addDisciplineToGroupHandler = () => {
         if (!selectedGroupForDiscipline) {
             alert('Выберите группу!')
@@ -195,7 +195,7 @@ function SettingsPage() {
         setEditingDiscipline(null)
     }
 
-    // ========== СТУДЕНТЫ ==========
+    //  СТУДЕНТЫ
     const addStudent = () => {
         if (newStudent.name.trim() && newStudent.group) {
             let newId = 1
@@ -235,7 +235,7 @@ function SettingsPage() {
         setEditingStudent(null)
     }
 
-    // ========== ДОСТУПНОСТЬ/ПРЕДПОЧТЕНИЯ ==========
+    // ДОСТУПНОСТЬ/ПРЕДПОЧТЕНИЯ
     const toggleAvailability = (teacherIndex, day, slot) => {
         setTeachers(prev => {
             const newTeachers = prev.map((teacher, index) => {
@@ -483,7 +483,7 @@ function SettingsPage() {
                             )}
                         </section>
 
-                        {/* ===== ПРЕПОДАВАТЕЛИ ===== */}
+                        {/* ПРЕПОДАВАТЕЛИ*/}
                         <section className="card teachers">
                             <h2>Преподаватели</h2>
                             <div className="settings-form">
@@ -679,7 +679,7 @@ function SettingsPage() {
                             </ul>
                         </section>
 
-                        {/* ===== ДИСЦИПЛИНЫ ===== */}
+                        {/* ДИСЦИПЛИНЫ */}
                         <section className="card disciplines">
                             <h2>Дисциплины по группам</h2>
                             <div className="settings-form">

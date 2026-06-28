@@ -28,7 +28,6 @@ function ReportsPage() {
 
     const attestationTypes = ["Экзамен", "Дифференцированный зачет", "Защита проектов"]
 
-    // ========== ЗАГРУЗКА ДАННЫХ ИЗ LOCALSTORAGE (С ДАШБОРДА) ==========
     useEffect(() => {
         const savedGroup = localStorage.getItem('reportsGroup')
         const savedType = localStorage.getItem('reportsType')
@@ -38,7 +37,6 @@ function ReportsPage() {
             localStorage.removeItem('reportsGroup')
         }
         if (savedType) {
-            // Преобразуем тип из кнопок в полноценное название
             if (savedType === 'exam') setAttestationType('Экзамен')
             else if (savedType === 'credit') setAttestationType('Дифференцированный зачет')
             localStorage.removeItem('reportsType')

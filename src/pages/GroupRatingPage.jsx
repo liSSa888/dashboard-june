@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-// import { loadStudents, loadTeachers, loadRatings, loadDisciplinesByGroup } from '../api/api'
 import { loadStudents, loadTeachers, loadRatings, loadDisciplinesByGroup } from '../data/loadData'
 import '../styles/style.css'
 

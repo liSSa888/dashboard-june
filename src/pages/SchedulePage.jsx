@@ -19,7 +19,7 @@ function SchedulePage() {
     const [preferences, setPreferences] = useState({});
     const [teachersForGroup, setTeachersForGroup] = useState([]);
 
-    // ========== ДЛЯ ПЕРИОДОВ ==========
+
     const [weeksSchedule, setWeeksSchedule] = useState({});
     const [totalWeeks, setTotalWeeks] = useState(1);
     const [currentWeek, setCurrentWeek] = useState(1);
@@ -52,7 +52,7 @@ function SchedulePage() {
         load();
     }, []);
 
-    // При смене периода меняем количество недель и загружаем расписание
+
     useEffect(() => {
         let weeks = 1;
         if (selectedPeriod === 'week') weeks = 1;
@@ -96,7 +96,7 @@ function SchedulePage() {
         }
     }, [selectedGroup, disciplinesByGroup]);
 
-    // ========== НОВЫЙ АЛГОРИТМ ГЕНЕРАЦИИ (ВСЕ ДИСЦИПЛИНЫ ГАРАНТИРОВАННО ПОПАДАЮТ) ==========
+
     const generateSchedule = () => {
         if (!selectedGroup) return alert('Выберите группу');
         const disciplines = disciplinesByGroup[selectedGroup] || [];
@@ -106,21 +106,20 @@ function SchedulePage() {
         setTimeout(() => {
             const days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ'];
             const maxSlots = 4;
-            const totalSlots = days.length * maxSlots; // 20 слотов
+            const totalSlots = days.length * maxSlots;
 
-            // ========== 1. РАСЧЁТ НАГРУЗКИ ==========
-            // Сначала каждая дисциплина получает минимум 1 пару
+       
             let pairsMap = {};
             disciplines.forEach(d => {
                 pairsMap[d.name] = 1;
             });
 
-            // Оставшиеся слоты распределяем пропорционально часам
+
             const remainingSlots = totalSlots - disciplines.length;
             if (remainingSlots > 0) {
                 const totalHours = disciplines.reduce((sum, d) => sum + (d.hours || 0), 0);
                 if (totalHours > 0) {
-                    // Сортируем дисциплины по часам (по убыванию)
+                  
                     const sorted = [...disciplines].sort((a, b) => (b.hours || 0) - (a.hours || 0));
                     let allocated = 0;
                     sorted.forEach(d => {
@@ -128,7 +127,7 @@ function SchedulePage() {
                         pairsMap[d.name] += extra;
                         allocated += extra;
                     });
-                    // Если перераспределили больше слотов — убираем лишние у последней дисциплины
+                   
                     if (allocated > remainingSlots) {
                         const diff = allocated - remainingSlots;
                         const lastDisc = sorted[sorted.length - 1];
@@ -137,7 +136,7 @@ function SchedulePage() {
                 }
             }
 
-            // ========== 2. СОЗДАЁМ МАССИВ ЗАНЯТИЙ ==========
+            // МАССИВ ЗАНЯТИЙ
             let lessons = [];
             Object.keys(pairsMap).forEach(discName => {
                 const disc = disciplines.find(d => d.name === discName);
@@ -152,10 +151,10 @@ function SchedulePage() {
                 }
             });
 
-            // Перемешиваем
+            
             lessons.sort(() => Math.random() - 0.5);
 
-            // ========== 3. РАСПРЕДЕЛЯЕМ ПО ДНЯМ ==========
+            // РАСПРЕДЕЛение ПО ДНЯМ
             const totalLessons = lessons.length;
             let perDay = Math.floor(totalLessons / days.length);
             let remainder = totalLessons % days.length;
@@ -173,14 +172,14 @@ function SchedulePage() {
                     }
                 }
 
-                // Сортируем занятия по предпочтениям преподавателей
+                
                 dayLessons.sort((a, b) => {
                     const aPref = preferences[`${a.teacher}_${day}_1`] === true ? 1 : 0;
                     const bPref = preferences[`${b.teacher}_${day}_1`] === true ? 1 : 0;
                     return bPref - aPref;
                 });
 
-                // Заполняем слоты
+                // Заполнение слотов
                 for (let slot = 1; slot <= maxSlots; slot++) {
                     let placed = false;
                     for (let i = 0; i < dayLessons.length; i++) {
@@ -207,7 +206,7 @@ function SchedulePage() {
                     }
                 }
 
-                // Если остались нераспределённые занятия — пытаемся поставить в пустые слоты
+               
                 const remaining = dayLessons.filter(l => l !== null);
                 for (const lesson of remaining) {
                     for (let slot = 1; slot <= maxSlots; slot++) {
@@ -230,7 +229,7 @@ function SchedulePage() {
                 return { day, slots };
             });
 
-            // ========== 4. СОХРАНЯЕМ ==========
+          
             const newWeeks = { ...weeksSchedule };
             if (selectedPeriod === 'week') {
                 newWeeks[selectedWeek] = JSON.parse(JSON.stringify(baseSchedule));

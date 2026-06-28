@@ -21,11 +21,9 @@ function RetakesPage() {
     const [retakeDate, setRetakeDate] = useState('')
     const [showVedomost, setShowVedomost] = useState(false)
 
-    // ========== ГАЛОЧКИ ==========
     const [includeGroup, setIncludeGroup] = useState(false)
     const [includeDiscipline, setIncludeDiscipline] = useState(false)
 
-    // ========== ЗАГРУЗКА ДАННЫХ ИЗ LOCALSTORAGE (С ДАШБОРДА) ==========
     useEffect(() => {
         const savedGroup = localStorage.getItem('retakesGroup')
         const savedDiscipline = localStorage.getItem('retakesDiscipline')
