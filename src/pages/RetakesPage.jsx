@@ -188,15 +188,15 @@ function RetakesPage() {
                                     <h2>ВЕДОМОСТЬ</h2>
                                 </div>
 
-                                <p style={{ margin: '12px 0', fontSize: '16px' }}>
-                                    пересдачи экзамена по курсу <strong>«{includeDiscipline ? selectedDiscipline : '___________'}»</strong>
+                                <p style={{ margin: '12px 0', fontSize: '15px', fontFamily: 'Times New Roman' }}>
+                                    пересдачи экзамена по курсу <span>«{includeDiscipline ? selectedDiscipline : '______________________'}»</span>
                                 </p>
 
                                 <div className="document-info">
-                                    <p><strong>Дата проведения основного экзамена:</strong> {mainExamDate || '___________'}</p>
-                                    <p><strong>Дата проведения пересдачи:</strong> {retakeDate || '___________'}</p>
-                                    <p><strong>Преподаватель:</strong> {selectedTeacher || '___________'}</p>
-                                    <p><strong>Группы:</strong> {includeGroup ? selectedGroup : '___________'}</p>
+                                    <p><span>Дата проведения основного экзамена:</span> {mainExamDate || '______________________'}</p>
+                                    <p><span>Дата проведения пересдачи:</span> {retakeDate || '______________________'}</p>
+                                    <p><span>Преподаватель:</span> {selectedTeacher || '______________________'}</p>
+                                    <p><span>Группы:</span> {includeGroup ? selectedGroup : '______________________'}</p>
                                 </div>
 
                                 <div className="table-wrapper">
@@ -230,10 +230,20 @@ function RetakesPage() {
                                     </table>
                                 </div>
 
-                                <div className="report-signatures" style={{ marginTop: '25px' }}>
-                                    <p>Дата: ___________</p>
-                                    <p>Экзаменатор: __________________</p>
-                                    <p>Руководитель учебной части: __________________</p>
+                                <div style={{ marginTop: '8px', textAlign: 'right' }}>
+                                    <p style={{ margin: '20px 0 1px 0', fontSize: '14px', fontFamily: 'Times New Roman' }}>
+                                        Преподаватель ____________________ / ________________________
+                                    </p>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: '10px' }}>
+                                        <span style={{ fontSize: '10.3px', marginRight: '80px', fontStyle: 'italic', fontFamily: 'Times New Roman' }}>(Подпись)</span>
+                                        <span style={{ fontSize: '10.3px', marginRight: "40px", fontStyle: 'italic', fontFamily: 'Times New Roman' }}>(Расшифровка подписи)</span>
+                                    </div>
+                                    <p style={{ margin: '15px 0', fontSize: '14px', fontFamily: 'Times New Roman' }}>
+                                        Дата «___»____________________ 202___ г.
+                                    </p>
+                                    <p style={{ margin: '15px 0', fontSize: '14px', fontFamily: 'Times New Roman' }}>
+                                        Руководитель учебной части___________________
+                                    </p>
                                 </div>
                             </section>
                         </div>

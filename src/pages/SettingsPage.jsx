@@ -13,15 +13,15 @@ function SettingsPage() {
     const [students, setStudents] = useState([])
     const [disciplinesByGroup, setDisciplinesByGroup] = useState({})
 
-    // ГРУППЫ
+    // ========== ГРУППЫ ==========
     const [newGroup, setNewGroup] = useState({ name: '', speciality: '', course: '' })
     const [editingGroup, setEditingGroup] = useState(null)
 
-    //ПРЕПОДАВАТЕЛИ
+    // ========== ПРЕПОДАВАТЕЛИ ==========
     const [newTeacher, setNewTeacher] = useState({ name: '', direction: 'РПО', notes: '' })
     const [editingTeacher, setEditingTeacher] = useState(null)
 
-    //ДИСЦИПЛИНЫ
+    // ========== ДИСЦИПЛИНЫ ==========
     const [selectedGroupForDiscipline, setSelectedGroupForDiscipline] = useState('')
     const [newDiscipline, setNewDiscipline] = useState({
         name: '',
@@ -31,12 +31,23 @@ function SettingsPage() {
     })
     const [editingDiscipline, setEditingDiscipline] = useState(null)
 
-    //СТУДЕНТЫ
-    const [newStudent, setNewStudent] = useState({ name: '', group: '' })
+    // ========== СТУДЕНТЫ ==========
+    const [newStudent, setNewStudent] = useState({ name: '', group: '', recordBook: '' })
     const [editingStudent, setEditingStudent] = useState(null)
+
+    // ========== СОСТОЯНИЯ ДЛЯ СВОРАЧИВАНИЯ (ПО УМОЛЧАНИЮ ВСЁ СКРЫТО) ==========
+    const [expandedGroups, setExpandedGroups] = useState({})
+    const [expandedTeachers, setExpandedTeachers] = useState({})
+    const [expandedDisciplines, setExpandedDisciplines] = useState({})
 
     const [message, setMessage] = useState({ text: '', type: '' })
 
+    // ========== НАПРАВЛЕНИЯ (С РАСШИФРОВКОЙ) ==========
+    const directions = [
+        { value: 'РПО', label: '09.02.07 Информационные системы и программирование' },
+        { value: 'КГИД', label: '54.01.20 Компьютерная графика и дизайн' },
+        { value: 'НОВОЕ', label: '09.02.11 Разработка и управление программным обеспечением' }
+    ]
 
     const handleKeyDown = (e, callback) => {
         if (e.key === 'Enter') {
@@ -70,9 +81,9 @@ function SettingsPage() {
         setTimeout(() => setMessage({ text: '', type: '' }), 3000)
     }
 
-    // ГРУППЫ
+    // ========== ГРУППЫ ==========
     const addGroup = () => {
-        if (newGroup.name.trim() && newGroup.speciality.trim() && newGroup.course) {
+        if (newGroup.name.trim() && newGroup.speciality && newGroup.course) {
             setGroups([...groups, {
                 name: newGroup.name,
                 speciality: newGroup.speciality,
@@ -80,7 +91,7 @@ function SettingsPage() {
             }])
             setNewGroup({ name: '', speciality: '', course: '' })
         } else {
-            alert('Заполните название группы, специальность и выберите курс!')
+            alert('Заполните название группы, выберите специальность и курс!')
         }
     }
 
@@ -93,17 +104,17 @@ function SettingsPage() {
     const saveGroupEdit = () => {
         if (!editingGroup) return
         const { index, name, speciality, course } = editingGroup
-        if (!name.trim() || !speciality.trim() || !course) {
+        if (!name.trim() || !speciality || !course) {
             alert('Заполните все поля!')
             return
         }
         const newGroups = [...groups]
-        newGroups[index] = { name: name.trim(), speciality: speciality.trim(), course: parseInt(course) }
+        newGroups[index] = { name: name.trim(), speciality, course: parseInt(course) }
         setGroups(newGroups)
         setEditingGroup(null)
     }
 
-    //  ПРЕПОДАВАТЕЛИ 
+    // ========== ПРЕПОДАВАТЕЛИ ==========
     const addTeacher = () => {
         if (newTeacher.name.trim()) {
             setTeachers([...teachers, {
@@ -143,7 +154,7 @@ function SettingsPage() {
         setEditingTeacher(null)
     }
 
-    //  ДИСЦИПЛИНЫ
+    // ========== ДИСЦИПЛИНЫ ==========
     const addDisciplineToGroupHandler = () => {
         if (!selectedGroupForDiscipline) {
             alert('Выберите группу!')
@@ -195,9 +206,9 @@ function SettingsPage() {
         setEditingDiscipline(null)
     }
 
-    //  СТУДЕНТЫ
+    // ========== СТУДЕНТЫ ==========
     const addStudent = () => {
-        if (newStudent.name.trim() && newStudent.group) {
+        if (newStudent.name.trim() && newStudent.group && newStudent.recordBook.trim()) {
             let newId = 1
             if (students.length > 0) {
                 const maxId = Math.max(...students.map(s => Number(s.id) || 0))
@@ -207,13 +218,13 @@ function SettingsPage() {
                 id: newId,
                 name: newStudent.name,
                 group: newStudent.group,
-                recordBook: '',
+                recordBook: newStudent.recordBook.trim(),
                 attendance1: 0, homework1: 0, current1: 0, exam1: 0,
                 attendance2: 0, homework2: 0, current2: 0, exam2: 0
             }])
-            setNewStudent({ name: '', group: '' })
+            setNewStudent({ name: '', group: '', recordBook: '' })
         } else {
-            alert('Введите ФИО студента и выберите группу!')
+            alert('Заполните ФИО, группу и номер зачётной книжки!')
         }
     }
 
@@ -223,19 +234,19 @@ function SettingsPage() {
 
     const saveStudentEdit = () => {
         if (!editingStudent) return
-        const { id, name, group } = editingStudent
-        if (!name.trim() || !group) {
+        const { id, name, group, recordBook } = editingStudent
+        if (!name.trim() || !group || !recordBook.trim()) {
             alert('Заполните все поля!')
             return
         }
         const newStudents = students.map(s =>
-            s.id === id ? { ...s, name: name.trim(), group } : s
+            s.id === id ? { ...s, name: name.trim(), group, recordBook: recordBook.trim() } : s
         )
         setStudents(newStudents)
         setEditingStudent(null)
     }
 
-    // ДОСТУПНОСТЬ/ПРЕДПОЧТЕНИЯ
+    // ========== ДОСТУПНОСТЬ/ПРЕДПОЧТЕНИЯ ==========
     const toggleAvailability = (teacherIndex, day, slot) => {
         setTeachers(prev => {
             const newTeachers = prev.map((teacher, index) => {
@@ -271,6 +282,19 @@ function SettingsPage() {
 
     const days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ']
 
+    // ========== ФУНКЦИИ ДЛЯ СВОРАЧИВАНИЯ ==========
+    const toggleGroup = (idx) => {
+        setExpandedGroups(prev => ({ ...prev, [idx]: !prev[idx] }))
+    }
+
+    const toggleTeacher = (idx) => {
+        setExpandedTeachers(prev => ({ ...prev, [idx]: !prev[idx] }))
+    }
+
+    const toggleDiscipline = (groupName) => {
+        setExpandedDisciplines(prev => ({ ...prev, [groupName]: !prev[groupName] }))
+    }
+
     return (
         <Layout>
             <main className="main">
@@ -296,7 +320,7 @@ function SettingsPage() {
 
                     <div className="settings-grid">
 
-                        {/* ===== ГРУППЫ ===== */}
+                        {/* ===== ГРУППЫ (С ВЫПАДАЮЩИМ СПИСКОМ СПЕЦИАЛЬНОСТЕЙ) ===== */}
                         <section className="card groups">
                             <h2>Группы</h2>
                             <div className="settings-form">
@@ -307,13 +331,16 @@ function SettingsPage() {
                                     onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
                                     onKeyDown={(e) => handleKeyDown(e, addGroup)}
                                 />
-                                <input
-                                    type="text"
-                                    placeholder="Специальность"
+                                <select
                                     value={newGroup.speciality}
                                     onChange={(e) => setNewGroup({ ...newGroup, speciality: e.target.value })}
-                                    onKeyDown={(e) => handleKeyDown(e, addGroup)}
-                                />
+                                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                                >
+                                    <option value="">Выберите специальность</option>
+                                    {directions.map(d => (
+                                        <option key={d.value} value={d.label}>{d.label}</option>
+                                    ))}
+                                </select>
                                 <select
                                     value={newGroup.course}
                                     onChange={(e) => setNewGroup({ ...newGroup, course: e.target.value })}
@@ -331,6 +358,7 @@ function SettingsPage() {
                                 {groups.length === 0 && <p className="empty-text">Пока нет групп</p>}
                                 {groups.map((group, idx) => {
                                     const groupStudents = students.filter(s => s.group === group.name)
+                                    const isExpanded = expandedGroups[idx] || false
                                     return (
                                         <li key={idx} className="list-items" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}>
                                             <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -340,15 +368,28 @@ function SettingsPage() {
                                                         {group.speciality} • {group.course || '?'} курс
                                                     </div>
                                                 </div>
-                                                <div style={{ display: 'flex', gap: '5px' }}>
+                                                <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                                                    <button
+                                                        onClick={() => toggleGroup(idx)}
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#666', padding: '2px 4px' }}
+                                                        title={isExpanded ? 'Свернуть' : 'Развернуть'}
+                                                    >
+                                                        {isExpanded ? '▲' : '▼'}
+                                                    </button>
                                                     <button
                                                         onClick={() => setEditingGroup({ index: idx, name: group.name, speciality: group.speciality, course: group.course || 1 })}
-                                                        className="edit-btn"
-                                                        style={{ padding: '4px 10px', borderRadius: '4px', background: '#17a2b8', color: 'white', border: 'none', cursor: 'pointer', fontSize: '12px' }}
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#666', padding: '2px 4px' }}
+                                                        title="Редактировать"
                                                     >
                                                         ✏️
                                                     </button>
-                                                    <button onClick={() => deleteGroup(idx)} className="delete-btn">Удалить</button>
+                                                    <button
+                                                        onClick={() => deleteGroup(idx)}
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#999', padding: '2px 4px' }}
+                                                        title="Удалить"
+                                                    >
+                                                        ✕
+                                                    </button>
                                                 </div>
                                             </div>
 
@@ -363,14 +404,15 @@ function SettingsPage() {
                                                             style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd', flex: 1 }}
                                                             onKeyDown={(e) => handleKeyDown(e, saveGroupEdit)}
                                                         />
-                                                        <input
-                                                            type="text"
+                                                        <select
                                                             value={editingGroup.speciality}
                                                             onChange={(e) => setEditingGroup({ ...editingGroup, speciality: e.target.value })}
-                                                            placeholder="Специальность"
-                                                            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd', flex: 1 }}
-                                                            onKeyDown={(e) => handleKeyDown(e, saveGroupEdit)}
-                                                        />
+                                                            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd' }}
+                                                        >
+                                                            {directions.map(d => (
+                                                                <option key={d.value} value={d.label}>{d.label}</option>
+                                                            ))}
+                                                        </select>
                                                         <select
                                                             value={editingGroup.course}
                                                             onChange={(e) => setEditingGroup({ ...editingGroup, course: e.target.value })}
@@ -387,70 +429,91 @@ function SettingsPage() {
                                                 </div>
                                             )}
 
-                                            <div style={{ width: '100%', marginTop: '8px', padding: '8px', background: '#f8fafc', borderRadius: '6px' }}>
-                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="ФИО студента"
-                                                        value={newStudent.name}
-                                                        onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value, group: group.name })}
-                                                        style={{ flex: '1', padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd' }}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') {
-                                                                e.preventDefault()
-                                                                if (newStudent.name.trim()) {
-                                                                    addStudent()
-                                                                } else {
-                                                                    alert('Введите ФИО студента!')
-                                                                }
-                                                            }
-                                                        }}
-                                                    />
-                                                    <button
-                                                        onClick={() => {
-                                                            if (newStudent.name.trim()) {
-                                                                addStudent()
-                                                            } else {
-                                                                alert('Введите ФИО студента!')
-                                                            }
-                                                        }}
-                                                        style={{ padding: '6px 14px', background: '#7c73f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-                                                    >
-                                                        Добавить студента
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {groupStudents.length > 0 && (
-                                                <div style={{ width: '100%', marginTop: '8px' }}>
-                                                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#334155', marginBottom: '4px' }}>
-                                                        Студенты:
+                                            {isExpanded && (
+                                                <>
+                                                    <div style={{ width: '100%', marginTop: '8px', padding: '8px', background: '#f8fafc', borderRadius: '6px' }}>
+                                                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="ФИО студента"
+                                                                value={newStudent.name}
+                                                                onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value, group: group.name })}
+                                                                style={{ flex: '1', padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd' }}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') {
+                                                                        e.preventDefault()
+                                                                        if (newStudent.name.trim() && newStudent.recordBook.trim()) {
+                                                                            addStudent()
+                                                                        } else {
+                                                                            alert('Введите ФИО и номер зачётной книжки!')
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Номер зачётной книжки"
+                                                                value={newStudent.recordBook}
+                                                                onChange={(e) => setNewStudent({ ...newStudent, recordBook: e.target.value })}
+                                                                style={{ flex: '1', padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd' }}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') {
+                                                                        e.preventDefault()
+                                                                        if (newStudent.name.trim() && newStudent.recordBook.trim()) {
+                                                                            addStudent()
+                                                                        } else {
+                                                                            alert('Введите ФИО и номер зачётной книжки!')
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (newStudent.name.trim() && newStudent.recordBook.trim()) {
+                                                                        addStudent()
+                                                                    } else {
+                                                                        alert('Введите ФИО и номер зачётной книжки!')
+                                                                    }
+                                                                }}
+                                                                style={{ padding: '6px 14px', background: '#7c73f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                                                            >
+                                                                Добавить студента
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                    <ul style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', paddingLeft: '0', listStyle: 'none' }}>
-                                                        {groupStudents.map((student, sidx) => (
-                                                            <li key={sidx} style={{ fontSize: '13px', color: '#475569', background: '#f1f5f9', padding: '2px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                {student.name}
-                                                                <button
-                                                                    onClick={() => setEditingStudent({ id: student.id, name: student.name, group: student.group })}
-                                                                    style={{ background: 'none', border: 'none', color: '#17a2b8', cursor: 'pointer', fontSize: '12px' }}
-                                                                >
-                                                                    ✏️
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => deleteStudent(student.id)}
-                                                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px' }}
-                                                                >
-                                                                    ✕
-                                                                </button>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                            {groupStudents.length === 0 && (
-                                                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '8px' }}>
-                                                    Нет студентов в группе
-                                                </div>
+
+                                                    {groupStudents.length > 0 && (
+                                                        <div style={{ width: '100%', marginTop: '8px' }}>
+                                                            <div style={{ fontSize: '13px', fontWeight: '500', color: '#334155', marginBottom: '4px' }}>
+                                                                Студенты:
+                                                            </div>
+                                                            <ul style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', paddingLeft: '0', listStyle: 'none' }}>
+                                                                {groupStudents.map((student, sidx) => (
+                                                                    <li key={sidx} style={{ fontSize: '13px', color: '#475569', background: '#f1f5f9', padding: '2px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                        {student.name} (зач. №{student.recordBook})
+                                                                        <button
+                                                                            onClick={() => setEditingStudent({ id: student.id, name: student.name, group: student.group, recordBook: student.recordBook || '' })}
+                                                                            style={{ background: 'none', border: 'none', color: '#17a2b8', cursor: 'pointer', fontSize: '12px' }}
+                                                                        >
+                                                                            ✏️
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => deleteStudent(student.id)}
+                                                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px' }}
+                                                                        >
+                                                                            ✕
+                                                                        </button>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+                                                    {groupStudents.length === 0 && (
+                                                        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '8px' }}>
+                                                            Нет студентов в группе
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
                                         </li>
                                     )
@@ -467,7 +530,6 @@ function SettingsPage() {
                                             onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
                                             placeholder="ФИО"
                                             style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd', flex: 1 }}
-                                            onKeyDown={(e) => handleKeyDown(e, saveStudentEdit)}
                                         />
                                         <select
                                             value={editingStudent.group}
@@ -476,6 +538,13 @@ function SettingsPage() {
                                         >
                                             {groups.map(g => <option key={g.name} value={g.name}>{g.name}</option>)}
                                         </select>
+                                        <input
+                                            type="text"
+                                            value={editingStudent.recordBook || ''}
+                                            onChange={(e) => setEditingStudent({ ...editingStudent, recordBook: e.target.value })}
+                                            placeholder="Номер зачётной книжки"
+                                            style={{ flex: '1', padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd' }}
+                                        />
                                         <button onClick={saveStudentEdit} style={{ padding: '6px 14px', background: '#28a745', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Сохранить</button>
                                         <button onClick={() => setEditingStudent(null)} style={{ padding: '6px 14px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Отмена</button>
                                     </div>
@@ -483,7 +552,7 @@ function SettingsPage() {
                             )}
                         </section>
 
-                        {/* ПРЕПОДАВАТЕЛИ*/}
+                        {/* ===== ПРЕПОДАВАТЕЛИ ===== */}
                         <section className="card teachers">
                             <h2>Преподаватели</h2>
                             <div className="settings-form">
@@ -499,8 +568,9 @@ function SettingsPage() {
                                     onChange={(e) => setNewTeacher({ ...newTeacher, direction: e.target.value })}
                                     style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
                                 >
-                                    <option value="РПО">РПО</option>
-                                    <option value="КГИД">КГИД</option>
+                                    {directions.map(d => (
+                                        <option key={d.value} value={d.value}>{d.label}</option>
+                                    ))}
                                 </select>
                                 <input
                                     type="text"
@@ -515,27 +585,42 @@ function SettingsPage() {
                             <ul>
                                 {teachers.length === 0 && <p className="empty-text">Пока нет преподавателей</p>}
                                 {teachers.map((teacher, idx) => {
-                                    const availability = teacher.availability || {};
-                                    const preferences = teacher.preferences || {};
+                                    const availability = teacher.availability || {}
+                                    const preferences = teacher.preferences || {}
+                                    const isExpanded = expandedTeachers[idx] || false
+                                    const dirLabel = directions.find(d => d.value === teacher.direction)?.label || teacher.direction
                                     return (
                                         <li key={idx} className="list-items" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}>
                                             <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <div>
                                                     <strong>{teacher.name}</strong>
                                                     <div style={{ fontSize: '12px', color: '#666' }}>
-                                                        {teacher.direction || 'РПО'}
+                                                        {dirLabel || teacher.direction || 'РПО'}
                                                         {teacher.notes && ` • ${teacher.notes}`}
                                                     </div>
                                                 </div>
-                                                <div style={{ display: 'flex', gap: '5px' }}>
+                                                <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                                                    <button
+                                                        onClick={() => toggleTeacher(idx)}
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#666', padding: '2px 4px' }}
+                                                        title={isExpanded ? 'Свернуть' : 'Развернуть'}
+                                                    >
+                                                        {isExpanded ? '▲' : '▼'}
+                                                    </button>
                                                     <button
                                                         onClick={() => setEditingTeacher({ index: idx, name: teacher.name, direction: teacher.direction || 'РПО', notes: teacher.notes || '' })}
-                                                        className="edit-btn"
-                                                        style={{ padding: '4px 10px', borderRadius: '4px', background: '#17a2b8', color: 'white', border: 'none', cursor: 'pointer', fontSize: '12px' }}
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#666', padding: '2px 4px' }}
+                                                        title="Редактировать"
                                                     >
                                                         ✏️
                                                     </button>
-                                                    <button onClick={() => deleteTeacher(idx)} className="delete-btn">Удалить</button>
+                                                    <button
+                                                        onClick={() => deleteTeacher(idx)}
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#999', padding: '2px 4px' }}
+                                                        title="Удалить"
+                                                    >
+                                                        ✕
+                                                    </button>
                                                 </div>
                                             </div>
 
@@ -555,8 +640,9 @@ function SettingsPage() {
                                                             onChange={(e) => setEditingTeacher({ ...editingTeacher, direction: e.target.value })}
                                                             style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd' }}
                                                         >
-                                                            <option value="РПО">РПО</option>
-                                                            <option value="КГИД">КГИД</option>
+                                                            {directions.map(d => (
+                                                                <option key={d.value} value={d.value}>{d.label}</option>
+                                                            ))}
                                                         </select>
                                                         <input
                                                             type="text"
@@ -572,114 +658,118 @@ function SettingsPage() {
                                                 </div>
                                             )}
 
-                                            <div style={{ width: '100%' }}>
-                                                <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '6px', color: '#334155' }}>
-                                                    Жёсткие ограничения (занятые слоты):
-                                                    <span style={{ fontSize: '11px', fontWeight: 'normal', color: '#666', marginLeft: '10px' }}>
-                                                        🟢 доступно — 🟥 занято (кликните для переключения)
-                                                    </span>
-                                                </div>
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 32px)', gap: '4px' }}>
-                                                    {days.map(day => (
-                                                        <div key={day} style={{ textAlign: 'center', fontSize: '11px', fontWeight: 'bold', color: '#555' }}>
-                                                            {day}
+                                            {isExpanded && (
+                                                <>
+                                                    <div style={{ width: '100%' }}>
+                                                        <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '6px', color: '#334155' }}>
+                                                            Жёсткие ограничения (занятые слоты):
+                                                            <span style={{ fontSize: '11px', fontWeight: 'normal', color: '#666', marginLeft: '10px' }}>
+                                                                🟢 доступно — 🟥 занято (кликните для переключения)
+                                                            </span>
                                                         </div>
-                                                    ))}
-                                                    {[1, 2, 3, 4].map(slot => (
-                                                        days.map(day => {
-                                                            const key = `${day}_${slot}`;
-                                                            const isAvailable = availability[key] !== false;
-                                                            return (
-                                                                <button
-                                                                    key={`${teacher.name}_${day}_${slot}`}
-                                                                    onClick={() => {
-                                                                        const newTeachers = [...teachers];
-                                                                        const teacherCopy = { ...newTeachers[idx] };
-                                                                        if (!teacherCopy.availability) teacherCopy.availability = {};
-                                                                        teacherCopy.availability[key] = !isAvailable;
-                                                                        newTeachers[idx] = teacherCopy;
-                                                                        setTeachers(newTeachers);
-                                                                    }}
-                                                                    style={{
-                                                                        width: '32px',
-                                                                        height: '32px',
-                                                                        background: isAvailable ? '#a5d6a7' : '#ef9a9a',
-                                                                        border: '1px solid #ccc',
-                                                                        borderRadius: '4px',
-                                                                        cursor: 'pointer',
-                                                                        fontSize: '11px',
-                                                                        color: '#333',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center',
-                                                                    }}
-                                                                    title={`${day} ${slot} пара — ${isAvailable ? 'доступно' : 'занято'}`}
-                                                                >
-                                                                    {slot}
-                                                                </button>
-                                                            );
-                                                        })
-                                                    ))}
-                                                </div>
-                                            </div>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 32px)', gap: '4px' }}>
+                                                            {days.map(day => (
+                                                                <div key={day} style={{ textAlign: 'center', fontSize: '11px', fontWeight: 'bold', color: '#555' }}>
+                                                                    {day}
+                                                                </div>
+                                                            ))}
+                                                            {[1, 2, 3, 4].map(slot => (
+                                                                days.map(day => {
+                                                                    const key = `${day}_${slot}`
+                                                                    const isAvailable = availability[key] !== false
+                                                                    return (
+                                                                        <button
+                                                                            key={`${teacher.name}_${day}_${slot}`}
+                                                                            onClick={() => {
+                                                                                const newTeachers = [...teachers]
+                                                                                const teacherCopy = { ...newTeachers[idx] }
+                                                                                if (!teacherCopy.availability) teacherCopy.availability = {}
+                                                                                teacherCopy.availability[key] = !isAvailable
+                                                                                newTeachers[idx] = teacherCopy
+                                                                                setTeachers(newTeachers)
+                                                                            }}
+                                                                            style={{
+                                                                                width: '32px',
+                                                                                height: '32px',
+                                                                                background: isAvailable ? '#a5d6a7' : '#ef9a9a',
+                                                                                border: '1px solid #ccc',
+                                                                                borderRadius: '4px',
+                                                                                cursor: 'pointer',
+                                                                                fontSize: '11px',
+                                                                                color: '#333',
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                justifyContent: 'center',
+                                                                            }}
+                                                                            title={`${day} ${slot} пара — ${isAvailable ? 'доступно' : 'занято'}`}
+                                                                        >
+                                                                            {slot}
+                                                                        </button>
+                                                                    )
+                                                                })
+                                                            ))}
+                                                        </div>
+                                                    </div>
 
-                                            <div style={{ width: '100%', marginTop: '12px' }}>
-                                                <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '6px', color: '#334155' }}>
-                                                    Мягкие ограничения (предпочтительные слоты):
-                                                    <span style={{ fontSize: '11px', fontWeight: 'normal', color: '#666', marginLeft: '10px' }}>
-                                                        🟦 предпочтительно (кликните для переключения)
-                                                    </span>
-                                                </div>
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 32px)', gap: '4px' }}>
-                                                    {days.map(day => (
-                                                        <div key={day} style={{ textAlign: 'center', fontSize: '11px', fontWeight: 'bold', color: '#555' }}>
-                                                            {day}
+                                                    <div style={{ width: '100%', marginTop: '12px' }}>
+                                                        <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '6px', color: '#334155' }}>
+                                                            Мягкие ограничения (предпочтительные слоты):
+                                                            <span style={{ fontSize: '11px', fontWeight: 'normal', color: '#666', marginLeft: '10px' }}>
+                                                                🟦 предпочтительно (кликните для переключения)
+                                                            </span>
                                                         </div>
-                                                    ))}
-                                                    {[1, 2, 3, 4].map(slot => (
-                                                        days.map(day => {
-                                                            const key = `${day}_${slot}`;
-                                                            const isPreferred = preferences[key] === true;
-                                                            return (
-                                                                <button
-                                                                    key={`${teacher.name}_${day}_${slot}_pref`}
-                                                                    onClick={() => {
-                                                                        const newTeachers = [...teachers];
-                                                                        const teacherCopy = { ...newTeachers[idx] };
-                                                                        if (!teacherCopy.preferences) teacherCopy.preferences = {};
-                                                                        teacherCopy.preferences[key] = !isPreferred;
-                                                                        newTeachers[idx] = teacherCopy;
-                                                                        setTeachers(newTeachers);
-                                                                    }}
-                                                                    style={{
-                                                                        width: '32px',
-                                                                        height: '32px',
-                                                                        background: isPreferred ? '#64b5f6' : '#f5f5f5',
-                                                                        border: '1px solid #ccc',
-                                                                        borderRadius: '4px',
-                                                                        cursor: 'pointer',
-                                                                        fontSize: '11px',
-                                                                        color: '#333',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center',
-                                                                    }}
-                                                                    title={`${day} ${slot} пара — ${isPreferred ? 'предпочтительно' : 'нейтрально'}`}
-                                                                >
-                                                                    {slot}
-                                                                </button>
-                                                            );
-                                                        })
-                                                    ))}
-                                                </div>
-                                            </div>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 32px)', gap: '4px' }}>
+                                                            {days.map(day => (
+                                                                <div key={day} style={{ textAlign: 'center', fontSize: '11px', fontWeight: 'bold', color: '#555' }}>
+                                                                    {day}
+                                                                </div>
+                                                            ))}
+                                                            {[1, 2, 3, 4].map(slot => (
+                                                                days.map(day => {
+                                                                    const key = `${day}_${slot}`
+                                                                    const isPreferred = preferences[key] === true
+                                                                    return (
+                                                                        <button
+                                                                            key={`${teacher.name}_${day}_${slot}_pref`}
+                                                                            onClick={() => {
+                                                                                const newTeachers = [...teachers]
+                                                                                const teacherCopy = { ...newTeachers[idx] }
+                                                                                if (!teacherCopy.preferences) teacherCopy.preferences = {}
+                                                                                teacherCopy.preferences[key] = !isPreferred
+                                                                                newTeachers[idx] = teacherCopy
+                                                                                setTeachers(newTeachers)
+                                                                            }}
+                                                                            style={{
+                                                                                width: '32px',
+                                                                                height: '32px',
+                                                                                background: isPreferred ? '#64b5f6' : '#f5f5f5',
+                                                                                border: '1px solid #ccc',
+                                                                                borderRadius: '4px',
+                                                                                cursor: 'pointer',
+                                                                                fontSize: '11px',
+                                                                                color: '#333',
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                justifyContent: 'center',
+                                                                            }}
+                                                                            title={`${day} ${slot} пара — ${isPreferred ? 'предпочтительно' : 'нейтрально'}`}
+                                                                        >
+                                                                            {slot}
+                                                                        </button>
+                                                                    )
+                                                                })
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
                                         </li>
-                                    );
+                                    )
                                 })}
                             </ul>
                         </section>
 
-                        {/* ДИСЦИПЛИНЫ */}
+                        {/* ===== ДИСЦИПЛИНЫ ===== */}
                         <section className="card disciplines">
                             <h2>Дисциплины по группам</h2>
                             <div className="settings-form">
@@ -728,13 +818,23 @@ function SettingsPage() {
                                 {groups.length === 0 && <p className="empty-text">Сначала создайте группы</p>}
                                 {groups.map(group => {
                                     const groupDisciplines = disciplinesByGroup[group.name] || []
+                                    const isExpanded = expandedDisciplines[group.name] || false
                                     if (groupDisciplines.length === 0) return null
                                     return (
                                         <div key={group.name} style={{ marginBottom: '20px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', paddingBottom: '6px', borderBottom: '1px solid #e2e8f0' }}>
-                                                <span style={{ fontSize: '14px', fontWeight: '600', color: '#334155' }}>{group.name}</span>
+                                                <span style={{ fontSize: '14px', fontWeight: '600', color: '#334155' }}>
+                                                    {group.name} ({groupDisciplines.length} дисциплин)
+                                                </span>
+                                                <button
+                                                    onClick={() => toggleDiscipline(group.name)}
+                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#666', padding: '2px 4px' }}
+                                                    title={isExpanded ? 'Свернуть' : 'Развернуть'}
+                                                >
+                                                    {isExpanded ? '▲' : '▼'}
+                                                </button>
                                             </div>
-                                            {groupDisciplines.map((discipline, idx) => (
+                                            {isExpanded && groupDisciplines.map((discipline, idx) => (
                                                 <li key={idx} className="list-items" style={{ marginBottom: '8px' }}>
                                                     <div>
                                                         <strong>{discipline.name}</strong>
@@ -753,16 +853,17 @@ function SettingsPage() {
                                                                 type: discipline.type || 'лекция',
                                                                 teacher: discipline.teacher || ''
                                                             })}
-                                                            className="edit-btn"
-                                                            style={{ padding: '4px 10px', borderRadius: '4px', background: '#17a2b8', color: 'white', border: 'none', cursor: 'pointer', fontSize: '12px' }}
+                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#666', padding: '2px 4px' }}
+                                                            title="Редактировать"
                                                         >
                                                             ✏️
                                                         </button>
                                                         <button
                                                             onClick={() => deleteDisciplineFromGroupHandler(group.name, discipline.name)}
-                                                            className="delete-btn"
+                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#999', padding: '2px 4px' }}
+                                                            title="Удалить"
                                                         >
-                                                            Удалить
+                                                            ✕
                                                         </button>
                                                     </div>
                                                 </li>

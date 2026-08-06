@@ -11,10 +11,28 @@ function GroupRatingPage() {
     const [selectedDiscipline, setSelectedDiscipline] = useState('')
     const [selectedTeacher, setSelectedTeacher] = useState('')
     const [teachers, setTeachers] = useState([])
+    const [teachersForGroup, setTeachersForGroup] = useState([])  // ← НОВОЕ
     const [ratings, setRatings] = useState({})
     const [disciplinesByGroupAll, setDisciplinesByGroupAll] = useState({})
     const [disciplinesForGroup, setDisciplinesForGroup] = useState([])
     const [loading, setLoading] = useState(true)
+
+    // ========== СТУДЕНТ-ПРОВЕРКА ==========
+    const [isStudent, setIsStudent] = useState(false)
+    const [studentId, setStudentId] = useState(null)
+
+    useEffect(() => {
+        const auth = localStorage.getItem('studentAuth')
+        if (auth) {
+            try {
+                const { studentId } = JSON.parse(auth)
+                setStudentId(studentId)
+                setIsStudent(true)
+            } catch (e) {
+                setIsStudent(false)
+            }
+        }
+    }, [])
 
     useEffect(() => {
         const loadData = async () => {
@@ -28,7 +46,21 @@ function GroupRatingPage() {
                 const disciplinesData = await loadDisciplinesByGroup()
                 setDisciplinesByGroupAll(disciplinesData)
                 if (disciplinesData[groupName]) {
-                    setDisciplinesForGroup(disciplinesData[groupName])
+                    const disciplines = disciplinesData[groupName]
+                    setDisciplinesForGroup(disciplines)
+                    // ===== НАХОДИМ ПРЕПОДОВАТЕЛЕЙ ДЛЯ ГРУППЫ =====
+                    const teacherNames = disciplines
+                        .map(d => d.teacher)
+                        .filter(t => t && t.trim() !== '')
+                    const uniqueTeacherNames = [...new Set(teacherNames)]
+                    // Фильтруем только тех преподавателей, которые есть в общем списке
+                    const foundTeachers = teachersData.filter(t =>
+                        uniqueTeacherNames.some(name => t.name === name)
+                    )
+                    setTeachersForGroup(foundTeachers.length > 0 ? foundTeachers : uniqueTeacherNames.map(name => ({ name })))
+                } else {
+                    setDisciplinesForGroup([])
+                    setTeachersForGroup([])
                 }
             } catch (err) {
                 console.error('Ошибка загрузки:', err)
@@ -94,6 +126,14 @@ function GroupRatingPage() {
         return '#d32f2f'
     }
 
+    const filteredStudents = groupName
+        ? students.filter(s => {
+            if (s.group !== groupName) return false
+            if (isStudent && s.id !== studentId) return false
+            return true
+        })
+        : []
+
     if (loading) return <div style={{ padding: '20px' }}>Загрузка...</div>
 
     if (!groupName) {
@@ -114,7 +154,10 @@ function GroupRatingPage() {
                 </select>
                 <select value={selectedTeacher} onChange={(e) => setSelectedTeacher(e.target.value)}>
                     <option value="">Выберите преподавателя</option>
-                    {teachers.map((t, index) => <option key={index}>{t.name}</option>)}
+                    {teachersForGroup.map((t, index) => {
+                        const name = typeof t === 'string' ? t : t.name
+                        return <option key={index} value={name}>{name}</option>
+                    })}
                 </select>
             </div>
 
@@ -133,7 +176,7 @@ function GroupRatingPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {students.map((student, idx) => {
+                                {filteredStudents.map((student, idx) => {
                                     const sRatings = getStudentRatings(student.id)
                                     const total = getTotal(sRatings)
                                     return (

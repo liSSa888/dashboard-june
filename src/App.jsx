@@ -7,6 +7,7 @@ import SettingsPage from './pages/SettingsPage'
 import ProfilePage from './pages/ProfilePage'
 import GroupRatingPage from './pages/GroupRatingPage'
 import SchedulePage from './pages/SchedulePage'
+import StudentLoginPage from './pages/StudentLoginPage'   // ← НОВЫЙ ИМПОРТ
 
 function PrivateRoute({ children }) {
   const isAuth = localStorage.getItem('isAuth')
@@ -19,6 +20,7 @@ function App() {
       <Route path="/" element={<Navigate to="/dashboard" />} />
       <Route path="/group/*" element={<GroupRatingPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/student-login" element={<StudentLoginPage />} /> {/* ← НОВЫЙ РОУТ */}
       <Route path="/dashboard" element={
         <PrivateRoute>
           <DashboardPage />
