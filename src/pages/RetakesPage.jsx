@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
 import { loadGroups, loadTeachers, loadStudents, loadRatings, loadDisciplinesByGroup } from '../data/loadData'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 import '../styles/style.css'
 import '../styles/retakes.css'
+
+
+
 
 function RetakesPage() {
     const [groups, setGroups] = useState([])
@@ -103,13 +108,71 @@ function RetakesPage() {
 
     const handlePrint = () => window.print()
 
+    // ========== ЭКСПОРТ В PDF ==========
+    const exportToPDF = () => {
+        const element = document.querySelector('.document-sheet')
+        if (!element) {
+            alert('Сначала сформируйте ведомость!')
+            return
+        }
+
+        const originalWidth = element.style.width
+        const originalOverflow = element.style.overflow
+        element.style.width = '210mm'
+        element.style.overflow = 'visible'
+
+        html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            width: 800,
+            height: element.scrollHeight,
+            onclone: (clonedDoc) => {
+                const clonedElement = clonedDoc.querySelector('.document-sheet')
+                if (clonedElement) {
+                    clonedElement.style.width = '210mm'
+                    clonedElement.style.overflow = 'visible'
+                }
+            }
+        }).then(canvas => {
+            element.style.width = originalWidth || ''
+            element.style.overflow = originalOverflow || ''
+
+            const imgData = canvas.toDataURL('image/png')
+            const pdf = new jsPDF('p', 'mm', 'a4')
+            const pdfWidth = 210
+            const pdfHeight = 297
+
+            let imgWidth = pdfWidth
+            let imgHeight = (canvas.height * pdfWidth) / canvas.width
+
+            if (imgHeight > pdfHeight) {
+                const scale = pdfHeight / imgHeight
+                imgWidth = pdfWidth * scale
+                imgHeight = pdfHeight
+            }
+
+            const xOffset = (pdfWidth - imgWidth) / 2
+            pdf.addImage(imgData, 'PNG', xOffset, 0, imgWidth, imgHeight)
+            pdf.save(`Ведомость_пересдач_${selectedGroup || 'без_группы'}.pdf`)
+        }).catch(err => {
+            console.error('Ошибка при создании PDF:', err)
+            alert('Ошибка при создании PDF. Попробуйте использовать печать.')
+        })
+    }
+
+
+
     return (
         <Layout>
             <main className="main">
                 <div className="main-content">
                     <div className="top-panel">
                         <h1>Реестр пересдач</h1>
-                        <button className="save-btn" onClick={handlePrint}>Печать ведомости</button>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button className="save-btn" onClick={handlePrint}>Печать ведомости</button>
+                            <button className="save-btn" onClick={exportToPDF} style={{ background: '#dc3545' }}>PDF</button>
+                        </div>
                     </div>
 
                     <section className="card filter-card">
@@ -188,27 +251,27 @@ function RetakesPage() {
                                     <h2>ВЕДОМОСТЬ</h2>
                                 </div>
 
-                                <p style={{ margin: '12px 0', fontSize: '15px', fontFamily: 'Times New Roman' }}>
-                                    пересдачи экзамена по курсу <span>«{includeDiscipline ? selectedDiscipline : '______________________'}»</span>
-                                </p>
 
-                                <div className="document-info">
-                                    <p><span>Дата проведения основного экзамена:</span> {mainExamDate || '______________________'}</p>
-                                    <p><span>Дата проведения пересдачи:</span> {retakeDate || '______________________'}</p>
-                                    <p><span>Преподаватель:</span> {selectedTeacher || '______________________'}</p>
-                                    <p><span>Группы:</span> {includeGroup ? selectedGroup : '______________________'}</p>
+                                <div className="document-info" style={{ display: 'flex', flexDirection: 'column', gap: '1mm' }}>
+                                    <p style={{ padding: 0, fontFamily: 'Times New Roman' }}>
+                                        пересдачи экзамена по курсу <span>«{includeDiscipline ? selectedDiscipline : '______________________'}»</span>
+                                    </p>
+                                    <p style={{ margin: 0, padding: 0 }}>Дата проведения основного экзамена: {mainExamDate || '______________________'}</p>
+                                    <p style={{ margin: 0, padding: 0 }}>Дата проведения пересдачи: {retakeDate || '______________________'}</p>
+                                    <p style={{ margin: 0, padding: 0 }}>Преподаватель: {selectedTeacher || '______________________'}</p>
+                                    <p style={{ margin: 0, padding: 0 }}>Группы: {includeGroup ? selectedGroup : '______________________'}</p>
                                 </div>
 
                                 <div className="table-wrapper">
                                     <table className="report-table">
                                         <thead>
                                             <tr>
-                                                <th>№</th>
-                                                <th>ФИО студента</th>
-                                                <th>Основной экзамен</th>
-                                                <th>Примечание</th>
-                                                <th>Вторая пересдача</th>
-                                                <th>Примечание</th>
+                                                <th style={{ fontWeight: 'normal' }}>№</th>
+                                                <th style={{ fontWeight: 'normal' }}>ФИО студента</th>
+                                                <th style={{ fontWeight: 'normal' }}>Основной экзамен</th>
+                                                <th style={{ fontWeight: 'normal' }}>Примечание</th>
+                                                <th style={{ fontWeight: 'normal' }}>Вторая пересдача</th>
+                                                <th style={{ fontWeight: 'normal' }}>Примечание</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -217,7 +280,7 @@ function RetakesPage() {
                                             ) : (
                                                 filteredStudents.map((student, idx) => (
                                                     <tr key={student.id}>
-                                                        <td>{idx + 1}</td>
+                                                        <td style={{ textAlign: 'left', verticalAlign: 'top', padding: '1px 4px' }}>{idx + 1 + '.'}</td>
                                                         <td>{student.name}</td>
                                                         <td></td>
                                                         <td></td>

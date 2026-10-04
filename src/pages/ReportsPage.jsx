@@ -99,10 +99,8 @@ function ReportsPage() {
             return
         }
 
-        // Клонируем элемент, чтобы не менять оригинал
         const clone = element.cloneNode(true)
 
-        // Убираем лишние стили, которые мешают Word
         clone.style.width = '100%'
         clone.style.maxWidth = '100%'
         clone.style.padding = '10mm 15mm'
@@ -110,7 +108,6 @@ function ReportsPage() {
         clone.style.background = 'white'
         clone.style.margin = '0 auto'
 
-        // Строим HTML-документ для Word
         const htmlContent = `
             <html xmlns:o='urn:schemas-microsoft-com:office:office'
                   xmlns:w='urn:schemas-microsoft-com:office:word'
@@ -154,53 +151,298 @@ function ReportsPage() {
         URL.revokeObjectURL(link.href)
     }
 
-    const exportToPDF = () => {
-        const element = document.querySelector('.document-sheet')
-        if (!element) return
+    // ========== ЭКСПОРТ В РЕДАКТИРУЕМЫЙ HTML (ВСЁ МОЖНО ПРАВИТЬ) ==========
+    const exportToEditableHtml = () => {
+        const printArea = document.querySelector('.print-area')
+        if (!printArea) {
+            alert('Сначала сформируйте ведомость!')
+            return
+        }
 
-        const originalWidth = element.style.width
-        const originalOverflow = element.style.overflow
-        element.style.width = '210mm'
-        element.style.overflow = 'visible'
+        const clone = printArea.cloneNode(true)
 
-        html2canvas(element, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            width: 800,
-            height: element.scrollHeight,
-            onclone: (clonedDoc) => {
-                const clonedElement = clonedDoc.querySelector('.document-sheet')
-                if (clonedElement) {
-                    clonedElement.style.width = '210mm'
-                    clonedElement.style.overflow = 'visible'
+        // Делаем редактируемыми ВСЕ элементы с текстом
+        const allElements = clone.querySelectorAll('*')
+        allElements.forEach(el => {
+            // Проверяем, есть ли у элемента текстовое содержимое (не пустое и не только пробелы)
+            const hasText = el.textContent && el.textContent.trim().length > 0
+
+            // Исключаем контейнеры, которые не должны быть редактируемыми (чтобы не сломать вёрстку)
+            const isContainer = ['DIV', 'SECTION', 'TBODY', 'THEAD', 'TR', 'BODY', 'HTML', 'HEAD', 'STYLE', 'SCRIPT'].includes(el.tagName)
+
+            if (hasText && !isContainer) {
+                el.setAttribute('contenteditable', 'true')
+            }
+        })
+
+        // Отдельно обрабатываем пустые ячейки таблицы (чтобы в них можно было вписать оценки)
+        const allCells = clone.querySelectorAll('td, th')
+        allCells.forEach(cell => {
+            cell.setAttribute('contenteditable', 'true')
+            cell.style.outline = 'none'
+            // Если ячейка пустая — ставим неразрывный пробел, чтобы она была видна и кликабельна
+            if (cell.textContent.trim() === '') {
+                cell.innerHTML = '&nbsp;'
+            }
+        })
+
+        // Убираем outline у всех редактируемых элементов
+        const editableElements = clone.querySelectorAll('[contenteditable="true"]')
+        editableElements.forEach(el => {
+            el.style.outline = 'none'
+        })
+
+        const sheets = clone.querySelectorAll('.document-sheet')
+        sheets.forEach(sheet => {
+            sheet.style.boxShadow = 'none'
+            sheet.style.margin = '0 auto'
+            sheet.style.background = 'white'
+            sheet.style.width = '210mm'
+            sheet.style.minHeight = '297mm'
+            sheet.style.padding = '15mm'
+        })
+
+        const allPElements = clone.querySelectorAll('p')
+        allPElements.forEach(p => {
+            if (p.style.margin === '0px 0') {
+                p.style.margin = '0'
+            }
+        })
+
+        const styles = `
+            * { box-sizing: border-box; }
+            body { 
+                margin: 0; 
+                padding: 20px; 
+                background: #e8e8e8;
+                font-family: 'Times New Roman', Times, serif;
+            }
+            .print-area {
+                background: white;
+                max-width: 210mm;
+                margin: 0 auto;
+                box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            }
+            .document-sheet {
+                width: 210mm;
+                min-height: 297mm;
+                margin: 0 auto;
+                background: white;
+                padding: 15mm;
+                color: black;
+            }
+            .document-header {
+                text-align: center;
+                margin-bottom: 13px;
+                font-family: 'Times New Roman', Times, serif;
+            }
+            .document-header h2 {
+                font-size: 16px;
+                margin-bottom: 0;
+                text-align: center;
+                color: black;
+            }
+            .college-name {
+                font-size: 15px;
+                line-height: 1.4;
+                font-weight: bold;
+                margin-bottom: 16px;
+            }
+            .document-info {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .document-info p,
+            .report-signatures p {
+                font-size: 15px;
+                line-height: 1.4;
+                font-family: 'Times New Roman', Times, serif;
+                margin: 0;
+                padding: 0;
+            }
+            .report-table {
+                width: 100%;
+                margin-top: 25px;
+                border-collapse: collapse;
+                min-width: unset;
+            }
+            .report-table th,
+            .report-table td {
+                border: 1px solid black;
+                padding: 4px;
+                font-family: 'Times New Roman', Times, serif;
+                text-align: center;
+                font-size: 14px;
+            }
+            .report-table th:nth-child(1), .report-table td:nth-child(1) { width: 5%; }
+            .report-table th:nth-child(2), .report-table td:nth-child(2) { width: 45%; }
+            .report-table th:nth-child(3), .report-table td:nth-child(3) { width: 20%; }
+            .report-table th:nth-child(4), .report-table td:nth-child(4) { width: 10%; }
+            .report-table th:nth-child(5), .report-table td:nth-child(5) { width: 10%; }
+            .report-table th:nth-child(6), .report-table td:nth-child(6) { width: 10%; }
+            .document-sheet .table-wrapper { overflow-x: hidden; }
+            
+            .editable-hint {
+                text-align: center;
+                font-size: 12px;
+                color: #999;
+                padding: 8px;
+                background: #f5f5f5;
+                border-bottom: 1px solid #ddd;
+                user-select: none;
+            }
+            .editable-hint span {
+                background: #ffeb3b;
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-weight: bold;
+                color: #333;
+            }
+            [contenteditable="true"]:hover {
+                background: #f0f7ff !important;
+                cursor: text;
+            }
+            [contenteditable="true"]:focus {
+                background: #e3f0ff !important;
+                outline: 2px solid #4a90d9 !important;
+            }
+
+            @media print {
+                body { padding: 0; background: white; }
+                .editable-hint { display: none; }
+                .document-sheet { 
+                    padding: 0 !important; 
+                    margin: 0 !important;
+                    width: 100% !important;
+                    min-height: auto !important;
+                }
+                .document-back { page-break-before: always; }
+                [contenteditable="true"]:hover,
+                [contenteditable="true"]:focus {
+                    background: transparent !important;
+                    outline: none !important;
                 }
             }
-        }).then(canvas => {
-            element.style.width = originalWidth || ''
-            element.style.overflow = originalOverflow || ''
+        `
 
-            const imgData = canvas.toDataURL('image/png')
-            const pdf = new jsPDF('p', 'mm', 'a4')
-            const pdfWidth = 210
-            const pdfHeight = 297
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Ведомость ${selectedGroup || ''}</title>
+                <style>${styles}</style>
+            </head>
+            <body>
+                <div class="editable-hint">
+                    📝 <span>КЛИКНИ ПО ЛЮБОМУ ТЕКСТУ</span> — И РЕДАКТИРУЙ!
+                    (Изменения сохранятся при печати или через Ctrl+S)
+                </div>
+                <div class="print-area">
+                    ${clone.innerHTML}
+                </div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const cells = document.querySelectorAll('[contenteditable="true"]');
+                        cells.forEach(cell => {
+                            cell.addEventListener('blur', function() {
+                                if (this.textContent.trim() === '') {
+                                    this.innerHTML = '&nbsp;';
+                                }
+                            });
+                        });
+                    });
+                </script>
+            </body>
+            </html>
+        `
 
-            let imgWidth = pdfWidth
-            let imgHeight = (canvas.height * pdfWidth) / canvas.width
+        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' })
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = `Ведомость_${selectedGroup || 'без_группы'}_редактируемая.html`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(link.href)
+    }
 
-            if (imgHeight > pdfHeight) {
-                const scale = pdfHeight / imgHeight
-                imgWidth = pdfWidth * scale
-                imgHeight = pdfHeight
+    const exportToPDF = () => {
+        const sheets = document.querySelectorAll('.document-sheet')
+        if (!sheets || sheets.length === 0) {
+            alert('Сначала сформируйте ведомость!')
+            return
+        }
+
+        const pdf = new jsPDF('p', 'mm', 'a4')
+        let isFirstPage = true
+
+        // Сохраняем оригинальные стили
+        const originalStyles = []
+        sheets.forEach((sheet, index) => {
+            originalStyles[index] = {
+                width: sheet.style.width,
+                overflow: sheet.style.overflow
+            }
+        })
+
+        // Рендерим каждый лист по отдельности
+        const renderSheet = (index) => {
+            const sheet = sheets[index]
+            if (!sheet) {
+                pdf.save(`ведомость_${selectedGroup || 'без_группы'}.pdf`)
+                return
             }
 
-            const xOffset = (pdfWidth - imgWidth) / 2
-            pdf.addImage(imgData, 'PNG', xOffset, 0, imgWidth, imgHeight)
-            pdf.save(`ведомость_${selectedGroup || 'без_группы'}.pdf`)
-        }).catch(err => {
-            console.error('Ошибка при создании PDF:', err)
-            alert('Ошибка при создании PDF. Попробуйте использовать печать.')
-        })
+            // Временно растягиваем для рендера
+            sheet.style.width = '210mm'
+            sheet.style.overflow = 'visible'
+
+            html2canvas(sheet, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                width: 800,
+                onclone: (clonedDoc) => {
+                    const clonedElement = clonedDoc.querySelector('.document-sheet')
+                    if (clonedElement) {
+                        clonedElement.style.width = '210mm'
+                        clonedElement.style.overflow = 'visible'
+                    }
+                }
+            }).then(canvas => {
+                // Возвращаем стили
+                sheet.style.width = originalStyles[index]?.width || ''
+                sheet.style.overflow = originalStyles[index]?.overflow || ''
+
+                const imgData = canvas.toDataURL('image/png')
+                const pdfWidth = 210
+                const pdfHeight = 297
+                const imgWidth = pdfWidth
+                const imgHeight = (canvas.height * pdfWidth) / canvas.width
+
+                // Если это не первая страница — добавляем новую
+                if (!isFirstPage) {
+                    pdf.addPage()
+                }
+                isFirstPage = false
+
+                // Центрируем изображение на странице
+                const xOffset = (pdfWidth - imgWidth) / 2
+                const yOffset = (pdfHeight - imgHeight) / 2
+                pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight)
+
+                // Рендерим следующий лист
+                renderSheet(index + 1)
+            }).catch(err => {
+                console.error('Ошибка при рендере листа:', err)
+                alert('Ошибка при создании PDF. Попробуйте использовать печать.')
+            })
+        }
+
+        // Начинаем с первого листа
+        renderSheet(0)
     }
 
     return (
@@ -213,6 +455,7 @@ function ReportsPage() {
                             <button className="save-btn" onClick={generateDocument}>Сформировать</button>
                             <button className="save-btn" onClick={handlePrint} style={{ background: '#17a2b8' }}>Печать</button>
                             <button className="save-btn" onClick={exportToWord} style={{ background: '#2b5797' }}>Word</button>
+                            <button className="save-btn" onClick={exportToEditableHtml} style={{ background: '#ff6b6b' }}>📝 Редактировать</button>
                             <button className="save-btn" onClick={exportToPDF} style={{ background: '#dc3545' }}>PDF</button>
                         </div>
                     </div>
@@ -266,19 +509,19 @@ function ReportsPage() {
                                         ОБРАЗОВАТЕЛЬНАЯ ОРГАНИЗАЦИЯ МОСКОВСКИЙ МЕЖДУНАРОДНЫЙ<br />
                                         КОЛЛЕДЖ ЦИФРОВЫХ ТЕХНОЛОГИЙ "АКАДЕМИЯ ТОП"
                                     </p>
-                                    <p style={{ marginTop: '14px', marginBottom: '14px', fontSize: '16px' }}>Очная(заочная) форма обучения.</p>
-                                    <h2 style={{ marginTop: '0', marginBottom: '10px' }}>ЗАЧЕТНО-ЭКЗАМЕНАЦИОННАЯ ВЕДОМОСТЬ</h2>
+                                    <p style={{ marginTop: '14px', marginBottom: '14px', fontSize: '16px' }}><span style={{ fontWeight: 'bold', textDecoration: 'underline' }}>Очная</span>(заочная) форма обучения.</p>
+                                    <h2 style={{ marginTop: '0', marginBottom: '22px' }}>ЗАЧЕТНО-ЭКЗАМЕНАЦИОННАЯ ВЕДОМОСТЬ</h2>
                                 </div>
 
-                                <div className="document-info" style={{ marginBottom: '6px' }}>
-                                    <p style={{ margin: '0px 0', fontSize: '16px', lineHeight: '1.2' }}><span>Учебный год:</span> __________ / семестр: ___</p>
-                                    <p style={{ margin: '0px 0', fontSize: '16px', lineHeight: '1.2' }}><span>Форма промежуточной аттестации:</span> {attestationType || '___________'}</p>
-                                    <p style={{ margin: '0px 0', fontSize: '16px', lineHeight: '1.2' }}><span>Группа:</span> {includeGroup ? selectedGroup : '___________'}</p>
-                                    <p style={{ margin: '0px 0', fontSize: '16px', lineHeight: '1.2' }}><span>Профессия/специальность:</span> {includeGroup ? speciality : '___________'}</p>
-                                    <p style={{ margin: '0px 0', fontSize: '16px', lineHeight: '1.2' }}><span>Учебный предмет, курс, дисциплина образовательной программы:</span> {selectedDiscipline || '___________'}</p>
-                                    <p style={{ margin: '0px 0', fontSize: '16px', lineHeight: '1.2' }}><span>Общая трудоемкость по учебному плану (час):</span> {selectedGroup && selectedDiscipline ? (hours || '___________') : '___________'}</p>
-                                    <p style={{ margin: '0px 0', fontSize: '16px', lineHeight: '1.2' }}><span>Фамилия, Имя, Отчество преподавателя:</span> {selectedTeacher || '___________'}</p>
-                                    <p style={{ margin: '0px 0', fontSize: '16px', lineHeight: '1.2' }}><span>Дата проведения:</span> {examDate || '___________'}</p>
+                                <div className="document-info" style={{ display: 'flex', flexDirection: 'column', marginBottom: '6px', gap: '1mm' }}>
+                                    <p style={{ margin: 0, padding: 0, fontSize: '15px', lineHeight: '1.2' }}>Учебный год: __________ / семестр: ___</p>
+                                    <p style={{ margin: 0, padding: 0, fontSize: '15px', lineHeight: '1.2' }}>Форма промежуточной аттестации: {attestationType || '___________'}</p>
+                                    <p style={{ margin: 0, padding: 0, fontSize: '15px', lineHeight: '1.2' }}>Группа: {includeGroup ? selectedGroup : '___________'}</p>
+                                    <p style={{ margin: '0px 0', fontSize: '15px', lineHeight: '1.2' }}>Профессия/специальность: {includeGroup ? speciality : '___________'}</p>
+                                    <p style={{ margin: '0px 0', fontSize: '15px', lineHeight: '1.2' }}>Учебный предмет, курс, дисциплина образовательной программы: {selectedDiscipline || '___________'}</p>
+                                    <p style={{ margin: '0px 0', fontSize: '15px', lineHeight: '1.2' }}>Общая трудоемкость по учебному плану (час): {selectedGroup && selectedDiscipline ? (hours || '___________') : '___________'}</p>
+                                    <p style={{ margin: '0px 0', fontSize: '15px', lineHeight: '1.2' }}>Фамилия, Имя, Отчество преподавателя: {selectedTeacher || '___________'}</p>
+                                    <p style={{ margin: '0px 0', fontSize: '15px', lineHeight: '1.2' }}>Дата проведения: {examDate || '___________'}</p>
                                 </div>
 
                                 <div className="table-wrapper">
@@ -286,14 +529,14 @@ function ReportsPage() {
                                         <thead>
                                             <tr>
                                                 <th rowSpan="2" style={{ padding: '4px 8px', border: '1px solid #000', fontSize: '14px', textAlign: 'center' }}>№ п/п</th>
-                                                <th rowSpan="2" style={{ padding: '4px 8px', border: '1px solid #000', fontSize: '14px', textAlign: 'center' }}>ФИО обучающегося</th>
-                                                <th rowSpan="2" style={{ padding: '4px 8px', border: '1px solid #000', fontSize: '14px', textAlign: 'center' }}>Номер зачетной книжки</th>
-                                                <th colSpan="2" style={{ padding: '4px 8px', border: '1px solid #000', fontSize: '14px', textAlign: 'center' }}>Оценка</th>
-                                                <th rowSpan="2" style={{ padding: '4px 8px', border: '1px solid #000', fontSize: '14px', textAlign: 'center' }}>Подпись преподавателя</th>
+                                                <th rowSpan="2" style={{ padding: '4px 8px', border: '1px solid #000', fontSize: '14px', verticalAlign: 'bottom', textAlign: 'center' }}>ФИО обучающегося</th>
+                                                <th rowSpan="2" style={{ padding: '0px 8px', border: '1px solid #000', fontSize: '14px', textAlign: 'left', verticalAlign: 'top' }}>Номер зачетной книжки</th>
+                                                <th colSpan="2" style={{ padding: '0px 8px', border: '1px solid #000', fontSize: '14px', textAlign: 'center', verticalAlign: 'bottom' }}>Оценка</th>
+                                                <th rowSpan="2" style={{ padding: '4px 8px', border: '1px solid #000', fontSize: '14px', textAlign: 'center', verticalAlign: 'bottom' }}>Подпись преподавателя</th>
                                             </tr>
                                             <tr>
                                                 <th style={{ padding: '4px 8px', border: '1px solid #000', fontSize: '14px', textAlign: 'center' }}>Цифрой</th>
-                                                <th style={{ padding: '4px 8px', border: '1px solid #000', fontSize: '14px', textAlign: 'center' }}>Прописью</th>
+                                                <th style={{ padding: '0px 0px', border: '1px solid #000', fontSize: '14px', textAlign: 'center', verticalAlign: 'top' }}>Прописью</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -306,9 +549,9 @@ function ReportsPage() {
                                             ) : (
                                                 filteredStudents.map((student, idx) => (
                                                     <tr key={student.id}>
-                                                        <td style={{ padding: '3px 8px', border: '1px solid #000', textAlign: 'center', fontSize: '14px' }}>{idx + 1}</td>
-                                                        <td style={{ padding: '3px 8px', border: '1px solid #000', fontSize: '14px' }}>{student.name}</td>
-                                                        <td style={{ padding: '3px 8px', border: '1px solid #000', textAlign: 'center', fontSize: '14px' }}>{student.recordBook || ''}</td>
+                                                        <td style={{ padding: '3px 8px', border: '1px solid #000', textAlign: 'right', fontSize: '14px' }}>{idx + 1}</td>
+                                                        <td style={{ padding: '3px 8px', border: '1px solid #000', fontSize: '14px', textAlign: 'left' }}>{student.name}</td>
+                                                        <td style={{ padding: '3px 8px', border: '1px solid #000', textAlign: 'right', fontSize: '14px' }}>{student.recordBook || ''}</td>
                                                         <td style={{ padding: '3px 8px', border: '1px solid #000', textAlign: 'center', fontSize: '14px' }}></td>
                                                         <td style={{ padding: '3px 8px', border: '1px solid #000', textAlign: 'center', fontSize: '14px' }}></td>
                                                         <td style={{ padding: '3px 8px', border: '1px solid #000', textAlign: 'center', fontSize: '14px' }}></td>

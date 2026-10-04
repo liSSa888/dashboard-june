@@ -14,7 +14,7 @@
 
 .document-header {
     text-align: center;
-    margin-bottom: 22px;
+    margin-bottom: 13px;
     font-family: 'Times New Roman', Times, serif;
 }
 
@@ -58,7 +58,7 @@
     padding: 4px;
     font-family: 'Times New Roman', Times, serif;
     text-align: center;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .document-sheet .table-wrapper {

@@ -108,7 +108,7 @@ function SchedulePage() {
             const maxSlots = 4;
             const totalSlots = days.length * maxSlots;
 
-       
+
             let pairsMap = {};
             disciplines.forEach(d => {
                 pairsMap[d.name] = 1;
@@ -119,7 +119,7 @@ function SchedulePage() {
             if (remainingSlots > 0) {
                 const totalHours = disciplines.reduce((sum, d) => sum + (d.hours || 0), 0);
                 if (totalHours > 0) {
-                  
+
                     const sorted = [...disciplines].sort((a, b) => (b.hours || 0) - (a.hours || 0));
                     let allocated = 0;
                     sorted.forEach(d => {
@@ -127,7 +127,7 @@ function SchedulePage() {
                         pairsMap[d.name] += extra;
                         allocated += extra;
                     });
-                   
+
                     if (allocated > remainingSlots) {
                         const diff = allocated - remainingSlots;
                         const lastDisc = sorted[sorted.length - 1];
@@ -151,7 +151,7 @@ function SchedulePage() {
                 }
             });
 
-            
+
             lessons.sort(() => Math.random() - 0.5);
 
             // РАСПРЕДЕЛение ПО ДНЯМ
@@ -172,7 +172,7 @@ function SchedulePage() {
                     }
                 }
 
-                
+
                 dayLessons.sort((a, b) => {
                     const aPref = preferences[`${a.teacher}_${day}_1`] === true ? 1 : 0;
                     const bPref = preferences[`${b.teacher}_${day}_1`] === true ? 1 : 0;
@@ -206,7 +206,7 @@ function SchedulePage() {
                     }
                 }
 
-               
+
                 const remaining = dayLessons.filter(l => l !== null);
                 for (const lesson of remaining) {
                     for (let slot = 1; slot <= maxSlots; slot++) {
@@ -229,7 +229,7 @@ function SchedulePage() {
                 return { day, slots };
             });
 
-          
+
             const newWeeks = { ...weeksSchedule };
             if (selectedPeriod === 'week') {
                 newWeeks[selectedWeek] = JSON.parse(JSON.stringify(baseSchedule));
