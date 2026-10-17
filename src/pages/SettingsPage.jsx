@@ -12,13 +12,14 @@ function SettingsPage() {
     const [teachers, setTeachers] = useState([])
     const [students, setStudents] = useState([])
     const [disciplinesByGroup, setDisciplinesByGroup] = useState({})
+    const sortedStudents = [...students].sort((a, b) => a.name.localeCompare(b.name, 'ru'))
 
     // ========== ГРУППЫ ==========
     const [newGroup, setNewGroup] = useState({ name: '', speciality: '', course: '' })
     const [editingGroup, setEditingGroup] = useState(null)
 
     // ========== ПРЕПОДАВАТЕЛИ ==========
-    const [newTeacher, setNewTeacher] = useState({ name: '', direction: 'РПО', notes: '' })
+    const [newTeacher, setNewTeacher] = useState({ name: '', directions: [], notes: '' })
     const [editingTeacher, setEditingTeacher] = useState(null)
 
     // ========== ДИСЦИПЛИНЫ ==========
@@ -46,7 +47,7 @@ function SettingsPage() {
     const directions = [
         { value: 'РПО', label: '09.02.07 Информационные системы и программирование' },
         { value: 'КГИД', label: '54.01.20 Компьютерная графика и дизайн' },
-        { value: 'НОВОЕ', label: '09.02.11 Разработка и управление программным обеспечением' }
+        { value: 'РУПО', label: '09.02.11 Разработка и управление программным обеспечением' }
     ]
 
     const handleKeyDown = (e, callback) => {
@@ -62,6 +63,7 @@ function SettingsPage() {
             const teachersData = await loadTeachers()
             const teachersWithFields = teachersData.map(t => ({
                 ...t,
+                directions: t.directions || (t.direction ? [t.direction] : []),
                 availability: t.availability || {},
                 preferences: t.preferences || {}
             }))
@@ -117,14 +119,18 @@ function SettingsPage() {
     // ========== ПРЕПОДАВАТЕЛИ ==========
     const addTeacher = () => {
         if (newTeacher.name.trim()) {
+            if (newTeacher.directions.length === 0) {
+                alert('Выберите хотя бы одну специальность!')
+                return
+            }
             setTeachers([...teachers, {
                 name: newTeacher.name,
-                direction: newTeacher.direction || 'РПО',
+                directions: newTeacher.directions, // Сохраняем массив
                 notes: newTeacher.notes || '',
                 availability: {},
                 preferences: {}
             }])
-            setNewTeacher({ name: '', direction: 'РПО', notes: '' })
+            setNewTeacher({ name: '', directions: [], notes: '' })
         } else {
             alert('Введите ФИО преподавателя!')
         }
@@ -138,16 +144,20 @@ function SettingsPage() {
 
     const saveTeacherEdit = () => {
         if (!editingTeacher) return
-        const { index, name, direction, notes } = editingTeacher
+        const { index, name, directions, notes } = editingTeacher
         if (!name.trim()) {
             alert('Введите ФИО!')
+            return
+        }
+        if (!directions || directions.length === 0) {
+            alert('Выберите хотя бы одну специальность!')
             return
         }
         const newTeachers = [...teachers]
         newTeachers[index] = {
             ...newTeachers[index],
             name: name.trim(),
-            direction: direction || 'РПО',
+            directions: directions, // Сохраняем массив
             notes: notes || ''
         }
         setTeachers(newTeachers)
@@ -357,7 +367,7 @@ function SettingsPage() {
                             <ul>
                                 {groups.length === 0 && <p className="empty-text">Пока нет групп</p>}
                                 {groups.map((group, idx) => {
-                                    const groupStudents = students.filter(s => s.group === group.name)
+                                    const groupStudents = sortedStudents.filter(s => s.group === group.name)
                                     const isExpanded = expandedGroups[idx] || false
                                     return (
                                         <li key={idx} className="list-items" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}>
@@ -563,15 +573,34 @@ function SettingsPage() {
                                     onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })}
                                     onKeyDown={(e) => handleKeyDown(e, addTeacher)}
                                 />
-                                <select
-                                    value={newTeacher.direction}
-                                    onChange={(e) => setNewTeacher({ ...newTeacher, direction: e.target.value })}
-                                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
-                                >
-                                    {directions.map(d => (
-                                        <option key={d.value} value={d.value}>{d.label}</option>
-                                    ))}
-                                </select>
+
+                                <details style={{ position: 'relative', flex: 1, minWidth: '250px' }}>
+                                    <summary style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ddd', background: '#fff', cursor: 'pointer', listStyle: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '42px', boxSizing: 'border-box' }}>
+                                        <span style={{ color: newTeacher.directions.length ? '#333' : '#999', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {newTeacher.directions.length > 0 ? newTeacher.directions.map(val => directions.find(d => d.value === val)?.value).join(', ') : 'Выберите специальности'}
+                                        </span>
+                                        <span style={{ fontSize: '10px', color: '#666' }}>▼</span>
+                                    </summary>
+                                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '8px', marginTop: '4px', zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', padding: '8px' }}>
+                                        {directions.map(d => (
+                                            <label key={d.value} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', cursor: 'pointer', fontSize: '13px', color: '#333' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={newTeacher.directions.includes(d.value)}
+                                                    onChange={(e) => {
+                                                        const checked = e.target.checked
+                                                        setNewTeacher(prev => ({
+                                                            ...prev,
+                                                            directions: checked ? [...prev.directions, d.value] : prev.directions.filter(val => val !== d.value)
+                                                        }))
+                                                    }}
+                                                />
+                                                <span style={{ whiteSpace: 'normal', lineHeight: '1.2' }}>{d.label}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </details>
+
                                 <input
                                     type="text"
                                     placeholder="Примечания (окна доступности)"
@@ -582,20 +611,25 @@ function SettingsPage() {
                                 />
                                 <button onClick={addTeacher}>Добавить</button>
                             </div>
+
                             <ul>
                                 {teachers.length === 0 && <p className="empty-text">Пока нет преподавателей</p>}
                                 {teachers.map((teacher, idx) => {
                                     const availability = teacher.availability || {}
                                     const preferences = teacher.preferences || {}
                                     const isExpanded = expandedTeachers[idx] || false
-                                    const dirLabel = directions.find(d => d.value === teacher.direction)?.label || teacher.direction
+
+                                    const dirLabels = (teacher.directions || [])
+                                        .map(val => directions.find(d => d.value === val)?.value || val)
+                                        .join(', ')
+
                                     return (
                                         <li key={idx} className="list-items" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}>
                                             <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <div>
                                                     <strong>{teacher.name}</strong>
                                                     <div style={{ fontSize: '12px', color: '#666' }}>
-                                                        {dirLabel || teacher.direction || 'РПО'}
+                                                        {dirLabels || 'Не указана'}
                                                         {teacher.notes && ` • ${teacher.notes}`}
                                                     </div>
                                                 </div>
@@ -608,7 +642,7 @@ function SettingsPage() {
                                                         {isExpanded ? '▲' : '▼'}
                                                     </button>
                                                     <button
-                                                        onClick={() => setEditingTeacher({ index: idx, name: teacher.name, direction: teacher.direction || 'РПО', notes: teacher.notes || '' })}
+                                                        onClick={() => setEditingTeacher({ index: idx, name: teacher.name, directions: teacher.directions || [], notes: teacher.notes || '' })}
                                                         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#666', padding: '2px 4px' }}
                                                         title="Редактировать"
                                                     >
@@ -626,32 +660,53 @@ function SettingsPage() {
 
                                             {editingTeacher && editingTeacher.index === idx && (
                                                 <div style={{ width: '100%', marginTop: '8px', padding: '8px', background: '#f8fafc', borderRadius: '6px' }}>
-                                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                                                         <input
                                                             type="text"
                                                             value={editingTeacher.name}
                                                             onChange={(e) => setEditingTeacher({ ...editingTeacher, name: e.target.value })}
                                                             placeholder="ФИО"
-                                                            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd', flex: 1 }}
+                                                            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd', flex: 1, minWidth: '150px' }}
                                                             onKeyDown={(e) => handleKeyDown(e, saveTeacherEdit)}
                                                         />
-                                                        <select
-                                                            value={editingTeacher.direction}
-                                                            onChange={(e) => setEditingTeacher({ ...editingTeacher, direction: e.target.value })}
-                                                            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd' }}
-                                                        >
-                                                            {directions.map(d => (
-                                                                <option key={d.value} value={d.value}>{d.label}</option>
-                                                            ))}
-                                                        </select>
+
+                                                        <details style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+                                                            <summary style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd', background: '#fff', cursor: 'pointer', listStyle: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '32px', boxSizing: 'border-box' }}>
+                                                                <span style={{ color: editingTeacher.directions?.length ? '#333' : '#999', fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                    {editingTeacher.directions?.length > 0 ? editingTeacher.directions.map(val => directions.find(d => d.value === val)?.value).join(', ') : 'Выберите специальности'}
+                                                                </span>
+                                                                <span style={{ fontSize: '10px', color: '#666' }}>▼</span>
+                                                            </summary>
+                                                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', padding: '8px' }}>
+                                                                {directions.map(d => (
+                                                                    <label key={d.value} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', cursor: 'pointer', fontSize: '13px', color: '#333' }}>
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={(editingTeacher.directions || []).includes(d.value)}
+                                                                            onChange={(e) => {
+                                                                                const checked = e.target.checked
+                                                                                setEditingTeacher(prev => ({
+                                                                                    ...prev,
+                                                                                    directions: checked ? [...(prev.directions || []), d.value] : (prev.directions || []).filter(val => val !== d.value)
+                                                                                }))
+                                                                            }}
+                                                                        />
+                                                                        <span style={{ whiteSpace: 'normal', lineHeight: '1.2' }}>{d.label}</span>
+                                                                    </label>
+                                                                ))}
+                                                            </div>
+                                                        </details>
+
                                                         <input
                                                             type="text"
                                                             value={editingTeacher.notes}
                                                             onChange={(e) => setEditingTeacher({ ...editingTeacher, notes: e.target.value })}
                                                             placeholder="Примечания"
-                                                            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd', flex: 1 }}
+                                                            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd', flex: 1, minWidth: '100px' }}
                                                             onKeyDown={(e) => handleKeyDown(e, saveTeacherEdit)}
                                                         />
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                                                         <button onClick={saveTeacherEdit} style={{ padding: '6px 14px', background: '#28a745', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Сохранить</button>
                                                         <button onClick={() => setEditingTeacher(null)} style={{ padding: '6px 14px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Отмена</button>
                                                     </div>
@@ -920,8 +975,8 @@ function SettingsPage() {
 
                     </div>
                 </div>
-            </main>
-        </Layout>
+            </main >
+        </Layout >
     )
 }
 

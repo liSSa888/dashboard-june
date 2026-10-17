@@ -10,6 +10,7 @@ function ReportsPage() {
     const [groups, setGroups] = useState([])
     const [teachers, setTeachers] = useState([])
     const [students, setStudents] = useState([])
+    const sortedStudents = [...students].sort((a, b) => a.name.localeCompare(b.name, 'ru'))
     const [ratings, setRatings] = useState({})
 
     const [selectedGroup, setSelectedGroup] = useState('')
@@ -69,7 +70,7 @@ function ReportsPage() {
     }, [selectedGroup, disciplinesByGroupAll])
 
     const filteredStudents = selectedGroup
-        ? students.filter(s => s.group === selectedGroup)
+        ? sortedStudents.filter(s => s.group === selectedGroup)
         : []
 
     const getSpecialityByGroup = (groupName) => {

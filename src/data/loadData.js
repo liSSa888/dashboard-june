@@ -100,3 +100,23 @@ export const loadHistory = async () => {
 export const saveHistory = async (history) => {
   localStorage.setItem("history", JSON.stringify(history));
 };
+
+// УЧЕБНЫЙ ГОД
+export const loadAcademicYear = async () => {
+  const saved = localStorage.getItem("academicYear");
+  return saved || "";
+};
+
+export const saveAcademicYear = async (year) => {
+  localStorage.setItem("academicYear", year);
+};
+
+// ДАТЫ ВЕДОМОСТЕЙ (по группе и дисциплине)
+export const loadVedomostDates = async () => {
+  const saved = localStorage.getItem("vedomostDates");
+  return saved ? JSON.parse(saved) : {};
+};
+
+export const saveVedomostDates = async (dates) => {
+  localStorage.setItem("vedomostDates", JSON.stringify(dates));
+};

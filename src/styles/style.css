@@ -249,20 +249,21 @@ select {
     color: #334155;
 }
 
+input[type='date'] {
+    font-size: 14px;
+    border: none;
+    color: #334155;
+    font-family: 'Times New Roman', Times, serif;
+}
+
 .info-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
 }
 
-input[type='date'] {
-    padding: 8px 11px;
-    border-radius: 10px;
-    border: 1px solid #dcdcdc;
-    background: white;
-    font-size: 14px;
-}
 
+/* #dc3545'   #28a745'  #fd7e14*/
 .table-wrapper {
     overflow-x: auto;
     width: 100%;
@@ -276,6 +277,8 @@ input[type='date'] {
 
 .vedomost-info {
     padding-bottom: 9px;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 25px;
 }
 
 h1 {
@@ -329,7 +332,7 @@ tbody tr:hover {
     background: #f8fafc;
 }
 
-.color-1 {
+/* .color-1 {
     background-color: #ead1dc;
 }
 
@@ -339,7 +342,7 @@ tbody tr:hover {
 
 .color-3 {
     background-color: #c27ba0;
-}
+} */
 
 /* FOOTER */
 .footer {
@@ -426,10 +429,7 @@ body {
     font-size: 13px;
 }
 
-.rating-table th {
-    background: #f8f9fa;
-    font-weight: 600;
-}
+
 
 .rating-table input {
     width: 55px;
@@ -439,22 +439,28 @@ body {
     border-radius: 4px;
 }
 
+.rating-table th {
+    font-weight: 600;
+}
+
 .rating-table tfoot td {
     background: #f8f9fa;
     font-weight: bold;
 }
 
 .color-1 {
-    background-color: #ead1dc !important;
+    background-color: #ead1dc;
 }
 
 .color-2 {
-    background-color: #d5abbf !important;
+    background-color: #e0b4c9;
 }
 
 .color-3 {
-    background-color: #dfa7c2 !important;
+    background-color: #ddaac3;
 }
+
+
 
 .sum-cell {
     background-color: #f0f0f0;
@@ -470,16 +476,25 @@ body {
     font-weight: 600;
 }
 
+.info-grid select {
+    padding: 4px 8px;
+}
+
+.info-grid input {
+    padding: 4px 8px;
+}
+
+.year-select {
+    border: none;
+    font-family: 'Times New Roman', Times, serif;
+}
+
 .rating-table .total-cell {
     font-weight: bold;
 }
 
 .info-grid p {
     margin: 5px 0;
-}
-
-.info-grid input,
-.info-grid select {
-    margin-left: 10px;
-    padding: 4px 8px;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 15.5px;
 }

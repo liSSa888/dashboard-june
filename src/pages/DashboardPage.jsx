@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
-import { loadGroups, loadTeachers, loadStudents, loadRatings, saveRatings, loadDisciplinesByGroup } from '../data/loadData'
+import { loadGroups, loadTeachers, loadStudents, loadRatings, saveRatings, loadDisciplinesByGroup, loadAcademicYear, saveAcademicYear, loadVedomostDates, saveVedomostDates } from '../data/loadData'
 import '../styles/style.css'
 
 function DashboardPage() {
@@ -9,15 +9,18 @@ function DashboardPage() {
     const [selectedGroup, setSelectedGroup] = useState('')
     const [selectedDiscipline, setSelectedDiscipline] = useState('')
     const [selectedTeacher, setSelectedTeacher] = useState('')
-    const [groupsList, setGroupsList] = useState([])
+    const [academicYear, setAcademicYear] = useState('')
+    const [datesByVedomost, setDatesByVedomost] = useState({})
     const [teachersList, setTeachersList] = useState([])
     const [teachersForGroup, setTeachersForGroup] = useState([])
     const [students, setStudents] = useState([])
+    const sortedStudents = [...students].sort((a, b) => a.name.localeCompare(b.name, 'ru'))
     const [ratings, setRatings] = useState({})
     const [history, setHistory] = useState([])
     const [showHistory, setShowHistory] = useState(false)
     const [disciplinesByGroupAll, setDisciplinesByGroupAll] = useState({})
     const [disciplinesForGroup, setDisciplinesForGroup] = useState([])
+    const [groupsList, setGroupsList] = useState([])
 
     const inputRefs = useRef({})
 
@@ -28,6 +31,13 @@ function DashboardPage() {
             setStudents(await loadStudents())
             setRatings(await loadRatings())
             setDisciplinesByGroupAll(await loadDisciplinesByGroup())
+
+            const year = await loadAcademicYear()
+            if (year) setAcademicYear(year)
+
+            const dates = await loadVedomostDates()
+            setDatesByVedomost(dates)
+
         }
         loadData()
     }, [])
@@ -86,7 +96,7 @@ function DashboardPage() {
     }
 
     const filteredStudents = selectedGroup
-        ? students.filter(s => s.group === selectedGroup)
+        ? sortedStudents.filter(s => s.group === selectedGroup)
         : []
 
     const getStudentRatings = (studentId) => {
@@ -160,6 +170,25 @@ function DashboardPage() {
         alert('Данные сохранены! История изменений записана.')
     }
 
+    const handleYearChange = async (e) => {
+        const value = e.target.value
+        setAcademicYear(value)
+        await saveAcademicYear(value) // Сохраняем через loadData
+    }
+
+    const handleDateChange = async (e) => {
+        if (!vedomostKey) return
+        const value = e.target.value
+        const updatedDates = { ...datesByVedomost, [vedomostKey]: value }
+        setDatesByVedomost(updatedDates)
+        await saveVedomostDates(updatedDates) // Сохраняем через loadData
+    }
+
+    const academicYears = Array.from({ length: 12 }, (_, i) => {
+        const start = 2026 + i
+        return `${start}/${start + 1}`
+    })
+
     const getAvg = (getter) => {
         if (filteredStudents.length === 0) return 0
         let sum = 0
@@ -169,6 +198,12 @@ function DashboardPage() {
         })
         return (sum / filteredStudents.length).toFixed(1)
     }
+
+    const vedomostKey = selectedGroup && selectedDiscipline
+        ? `${selectedGroup}_${selectedDiscipline}`
+        : ''
+
+    const currentDate = datesByVedomost[vedomostKey] || ''
 
     const avgFirst = getAvg(getFirstSum)
     const avgSecond = getAvg(getSecondSum)
@@ -234,21 +269,21 @@ function DashboardPage() {
                             <button
                                 className="save-btn"
                                 onClick={() => goToReports('exam')}
-                                style={{ background: '#dc3545' }}
+                                style={{ background: '#d75562' }}
                             >
                                 📄 Экзаменационная ведомость
                             </button>
                             <button
                                 className="save-btn"
                                 onClick={() => goToReports('credit')}
-                                style={{ background: '#28a745' }}
+                                style={{ background: '#78c289' }}
                             >
                                 📄 Зачётная ведомость
                             </button>
                             <button
                                 className="save-btn"
                                 onClick={goToRetakes}
-                                style={{ background: '#fd7e14' }}
+                                style={{ background: '#f6a35e' }}
                             >
                                 🔄 Пересдачи
                             </button>
@@ -274,11 +309,27 @@ function DashboardPage() {
                         <section className="card info-block">
                             <h2 className="vedomost-info">Информация о ведомости</h2>
                             <div className="info-grid">
-                                <p><strong>Учебный год:</strong> 2026/2027</p>
+                                <p>
+                                    <strong>Учебный год:</strong>{' '}
+                                    <select className="year-select" value={academicYear} onChange={handleYearChange}>
+                                        <option value="">Выберите год</option>
+                                        {academicYears.map(y => (
+                                            <option key={y} value={y}>{y}</option>
+                                        ))}
+                                    </select>
+                                </p>
                                 <p><strong>Группа:</strong> {selectedGroup}</p>
                                 <p><strong>Дисциплина:</strong> {selectedDiscipline}</p>
                                 <p><strong>Преподаватель:</strong> {selectedTeacher}</p>
-                                <p><strong>Дата:</strong> <input type="date" /></p>
+                                <p>
+                                    <strong>Дата:</strong>{' '}
+                                    <input
+                                        className="date-input"
+                                        type="date"
+                                        value={currentDate}
+                                        onChange={handleDateChange}
+                                    />
+                                </p>
                             </div>
                         </section>
                     )}
