@@ -28,22 +28,23 @@ function SettingsPage() {
         name: '',
         hours: '',
         type: 'лекция',
-        teacher: ''
+        teacher: '',
+        isYearly: false
     })
     const [editingDiscipline, setEditingDiscipline] = useState(null)
 
-    // ========== СТУДЕНТЫ ==========
+
     const [newStudent, setNewStudent] = useState({ name: '', group: '', recordBook: '' })
     const [editingStudent, setEditingStudent] = useState(null)
 
-    // ========== СОСТОЯНИЯ ДЛЯ СВОРАЧИВАНИЯ (ПО УМОЛЧАНИЮ ВСЁ СКРЫТО) ==========
+
     const [expandedGroups, setExpandedGroups] = useState({})
     const [expandedTeachers, setExpandedTeachers] = useState({})
     const [expandedDisciplines, setExpandedDisciplines] = useState({})
 
     const [message, setMessage] = useState({ text: '', type: '' })
 
-    // ========== НАПРАВЛЕНИЯ (С РАСШИФРОВКОЙ) ==========
+
     const directions = [
         { value: 'РПО', label: '09.02.07 Информационные системы и программирование' },
         { value: 'КГИД', label: '54.01.20 Компьютерная графика и дизайн' },
@@ -183,10 +184,11 @@ function SettingsPage() {
             name: newDiscipline.name,
             hours: parseInt(newDiscipline.hours),
             type: newDiscipline.type || 'лекция',
-            teacher: newDiscipline.teacher || ''
+            teacher: newDiscipline.teacher || '',
+            isYearly: newDiscipline.isYearly || false   // ← ДОБАВЛЕНО
         })
         setDisciplinesByGroup(newDisciplines)
-        setNewDiscipline({ name: '', hours: '', type: 'лекция', teacher: '' })
+        setNewDiscipline({ name: '', hours: '', type: 'лекция', teacher: '', isYearly: false })
     }
 
     const deleteDisciplineFromGroupHandler = (groupName, disciplineName) => {
@@ -199,7 +201,7 @@ function SettingsPage() {
 
     const saveDisciplineEdit = () => {
         if (!editingDiscipline) return
-        const { groupName, index, name, hours, type, teacher } = editingDiscipline
+        const { groupName, index, name, hours, type, teacher, isYearly } = editingDiscipline
         if (!name.trim() || !hours) {
             alert('Заполните название и часы!')
             return
@@ -210,7 +212,8 @@ function SettingsPage() {
             name: name.trim(),
             hours: parseInt(hours),
             type: type || 'лекция',
-            teacher: teacher || ''
+            teacher: teacher || '',
+            isYearly: isYearly || false
         }
         setDisciplinesByGroup(newDisciplines)
         setEditingDiscipline(null)
@@ -826,7 +829,7 @@ function SettingsPage() {
 
                         {/* ===== ДИСЦИПЛИНЫ ===== */}
                         <section className="card disciplines">
-                            <h2>Дисциплины по группам</h2>
+                            <h2>Дисциплины</h2>
                             <div className="settings-form">
                                 <select
                                     value={selectedGroupForDiscipline}
@@ -866,6 +869,22 @@ function SettingsPage() {
                                     <option value="">Преподаватель</option>
                                     {teachers.map(t => <option key={t.name}>{t.name}</option>)}
                                 </select>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0', width: 'fit-content' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={newDiscipline.isYearly || false}
+                                        onChange={(e) => setNewDiscipline({ ...newDiscipline, isYearly: e.target.checked })}
+                                        style={{
+                                            width: '16px',
+                                            height: '16px',
+                                            minWidth: '16px',
+                                            flex: 'none',
+                                            margin: 0,
+                                            cursor: 'pointer'
+                                        }}
+                                    />
+                                    <span style={{ fontSize: '14px', cursor: 'pointer' }}>2 семестра</span>
+                                </div>
                                 <button onClick={addDisciplineToGroupHandler}>Добавить</button>
                             </div>
 
@@ -896,6 +915,7 @@ function SettingsPage() {
                                                         <div style={{ fontSize: '12px', color: '#666' }}>
                                                             {discipline.type || 'лекция'} • {discipline.hours} часов
                                                             {discipline.teacher && ` • Преп.: ${discipline.teacher}`}
+                                                            {discipline.isYearly && ` • Весь год`}
                                                         </div>
                                                     </div>
                                                     <div style={{ display: 'flex', gap: '5px' }}>
@@ -906,7 +926,8 @@ function SettingsPage() {
                                                                 name: discipline.name,
                                                                 hours: discipline.hours || '',
                                                                 type: discipline.type || 'лекция',
-                                                                teacher: discipline.teacher || ''
+                                                                teacher: discipline.teacher || '',
+                                                                isYearly: discipline.isYearly || false
                                                             })}
                                                             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#666', padding: '2px 4px' }}
                                                             title="Редактировать"
@@ -958,6 +979,15 @@ function SettingsPage() {
                                                             style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #ddd', flex: 1 }}
                                                             onKeyDown={(e) => handleKeyDown(e, saveDisciplineEdit)}
                                                         />
+                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', width: 'fit-content', cursor: 'pointer' }}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={editingDiscipline.isYearly || false}
+                                                                onChange={(e) => setEditingDiscipline({ ...editingDiscipline, isYearly: e.target.checked })}
+                                                                style={{ margin: 0, cursor: 'pointer' }}
+                                                            />
+                                                            На год
+                                                        </label>
                                                         <button onClick={saveDisciplineEdit} style={{ padding: '6px 14px', background: '#28a745', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Сохранить</button>
                                                         <button onClick={() => setEditingDiscipline(null)} style={{ padding: '6px 14px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Отмена</button>
                                                     </div>

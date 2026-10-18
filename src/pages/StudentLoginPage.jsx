@@ -12,7 +12,7 @@ function StudentLoginPage() {
     const handleLogin = async (e) => {
         e.preventDefault()
         const students = await loadStudents()
-        // Ищем студента по ФИО (логин) и номеру зачётной книжки (пароль)
+
         const student = students.find(s =>
             s.name.trim().split(' ')[0].toLowerCase() === login.trim().toLowerCase() &&
             s.recordBook === password
