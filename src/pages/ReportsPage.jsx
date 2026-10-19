@@ -562,19 +562,6 @@ function ReportsPage() {
                                         </tbody>
                                     </table>
                                 </div>
-
-                                <div style={{ marginTop: '8px', textAlign: 'right' }}>
-                                    <p style={{ margin: '20px 0 1px 0', fontSize: '14px', fontFamily: 'Times New Roman' }}>
-                                        Преподаватель ____________________ / ________________________
-                                    </p>
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: '10px' }}>
-                                        <span style={{ fontSize: '10.3px', marginRight: '80px', fontStyle: 'italic', fontFamily: 'Times New Roman' }}>(Подпись)</span>
-                                        <span style={{ fontSize: '10.3px', marginRight: "40px", fontStyle: 'italic', fontFamily: 'Times New Roman' }}>(Расшифровка подписи)</span>
-                                    </div>
-                                    <p style={{ margin: '15px 0', fontSize: '14px', paddingRight: '20px', fontFamily: 'Times New Roman' }}>
-                                        Дата «___»____________________ 202___ г.
-                                    </p>
-                                </div>
                             </section>
 
                             {/* ===== ОБОРОТ (ТАБЛИЦА КРИТЕРИЕВ) ===== */}

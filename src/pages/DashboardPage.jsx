@@ -9,6 +9,7 @@ function DashboardPage() {
     const [selectedGroup, setSelectedGroup] = useState('')
     const [selectedDiscipline, setSelectedDiscipline] = useState('')
     const [selectedTeacher, setSelectedTeacher] = useState('')
+    const [activeSemester, setActiveSemester] = useState('1')
     const [academicYear, setAcademicYear] = useState('')
     const [datesByVedomost, setDatesByVedomost] = useState({})
     const [teachersList, setTeachersList] = useState([])
@@ -21,6 +22,7 @@ function DashboardPage() {
     const [disciplinesByGroupAll, setDisciplinesByGroupAll] = useState({})
     const [disciplinesForGroup, setDisciplinesForGroup] = useState([])
     const [groupsList, setGroupsList] = useState([])
+    const [activeRow, setActiveRow] = useState(null)
 
     const inputRefs = useRef({})
 
@@ -99,8 +101,13 @@ function DashboardPage() {
         ? sortedStudents.filter(s => s.group === selectedGroup)
         : []
 
+
+    const currentDisciplineObj = disciplinesForGroup.find(d => d.name === selectedDiscipline)
+    const isYearlyDiscipline = currentDisciplineObj?.isYearly || false
+
+
     const getStudentRatings = (studentId) => {
-        const key = `${studentId}_${selectedDiscipline}`
+        const key = `${studentId}_${selectedDiscipline}_${activeSemester}` // <-- ДОБАВИЛИ СЕМЕСТР
         const existing = ratings[key]
         if (existing) return existing
         return {
@@ -134,6 +141,17 @@ function DashboardPage() {
         return '2 (Пересдача)'
     }
 
+    // Вспомогательная функция: получает сумму баллов за конкретный семестр (1 или 2)
+    const getSemesterTotal = (studentId, semester) => {
+        const key = `${studentId}_${selectedDiscipline}_${semester}`
+        const sRatings = ratings[key]
+
+        if (!sRatings) return 0 // Если оценок нет, возвращаем 0
+
+        // Считаем сумму по тем же правилам (1-й и 2-й рейтинг внутри семестра)
+        return getTotal(sRatings)
+    }
+
     const getGradeColor = (total) => {
         if (total >= 61) return '#2e7d32'
         if (total >= 51) return '#1976d2'
@@ -144,7 +162,7 @@ function DashboardPage() {
     const updateScore = async (studentId, field, value) => {
         let numValue = parseInt(value, 10)
         if (isNaN(numValue)) numValue = 0
-        const key = `${studentId}_${selectedDiscipline}`
+        const key = `${studentId}_${selectedDiscipline}_${activeSemester}`
         const oldRatings = getStudentRatings(studentId)
         const oldValue = oldRatings[field] || 0
 
@@ -173,7 +191,7 @@ function DashboardPage() {
     const handleYearChange = async (e) => {
         const value = e.target.value
         setAcademicYear(value)
-        await saveAcademicYear(value) // Сохраняем через loadData
+        await saveAcademicYear(value)
     }
 
     const handleDateChange = async (e) => {
@@ -181,7 +199,7 @@ function DashboardPage() {
         const value = e.target.value
         const updatedDates = { ...datesByVedomost, [vedomostKey]: value }
         setDatesByVedomost(updatedDates)
-        await saveVedomostDates(updatedDates) // Сохраняем через loadData
+        await saveVedomostDates(updatedDates)
     }
 
     const academicYears = Array.from({ length: 12 }, (_, i) => {
@@ -252,6 +270,7 @@ function DashboardPage() {
 
         const newFieldName = fields[newFieldIndex]
         const refKey = `${newStudentIdx}_${newFieldName}`
+        setActiveRow(newStudentIdx)
         if (inputRefs.current[refKey]) {
             inputRefs.current[refKey].focus()
             inputRefs.current[refKey].select()
@@ -305,6 +324,33 @@ function DashboardPage() {
                         </select>
                     </div>
 
+
+                    {selectedGroup && selectedDiscipline && selectedTeacher && isYearlyDiscipline && (
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                            <button
+                                className="save-btn"
+                                onClick={() => setActiveSemester('1')}
+                                style={{ background: activeSemester === '1' ? '#7c73f6' : '#ccc' }}
+                            >
+                                1 семестр
+                            </button>
+                            <button
+                                className="save-btn"
+                                onClick={() => setActiveSemester('2')}
+                                style={{ background: activeSemester === '2' ? '#7c73f6' : '#ccc' }}
+                            >
+                                2 семестр
+                            </button>
+                            <button
+                                className="save-btn"
+                                onClick={() => setActiveSemester('year')}
+                                style={{ background: activeSemester === 'year' ? '#7c73f6' : '#ccc' }}
+                            >
+                                За год
+                            </button>
+                        </div>
+                    )}
+
                     {selectedGroup && selectedDiscipline && selectedTeacher && filteredStudents.length > 0 && (
                         <section className="card info-block">
                             <h2 className="vedomost-info">Информация о ведомости</h2>
@@ -335,183 +381,241 @@ function DashboardPage() {
                     )}
 
                     {selectedGroup && selectedDiscipline && selectedTeacher && filteredStudents.length > 0 ? (
-                        <div className="card table-card">
-                            <div className="table-wrapper">
-                                <table className="rating-table">
-                                    <thead>
-                                        <tr>
-                                            <th rowSpan="2">№</th>
-                                            <th rowSpan="2">ФИО</th>
-                                            <th colSpan="4" className="color-1">1 рейтинговая (макс.35)</th>
-                                            <th className="color-1">Сумма</th>
-                                            <th colSpan="4" className="color-2">2 рейтинговая (макс.35)</th>
-                                            <th className="color-2">Сумма</th>
-                                            <th rowSpan="2" className="color-3">Общая сумма</th>
-                                            <th rowSpan="2" className="color-3">Оценка</th>
-                                        </tr>
-                                        <tr>
-                                            <th className="color-1">Посещ.(5)</th>
-                                            <th className="color-1">ДЗ(10)</th>
-                                            <th className="color-1">Тек.контр.(10)</th>
-                                            <th className="color-1">КР(10)</th>
-                                            <th className="color-1">Сумма</th>
-                                            <th className="color-2">Посещ.(5)</th>
-                                            <th className="color-2">ДЗ(10)</th>
-                                            <th className="color-2">Тек.контр.(10)</th>
-                                            <th className="color-2">КР(10)</th>
-                                            <th className="color-2">Сумма</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredStudents.map((student, idx) => {
-                                            const sRatings = getStudentRatings(student.id)
-                                            const firstSum = getFirstSum(sRatings)
-                                            const secondSum = getSecondSum(sRatings)
-                                            const total = getTotal(sRatings)
-                                            return (
-                                                <tr key={student.id}>
-                                                    <td>{idx + 1}</td>
-                                                    <td>{student.name}</td>
-                                                    <td>
-                                                        <input
-                                                            ref={el => inputRefs.current[`${idx}_attendance1`] = el}
-                                                            type="number"
-                                                            value={sRatings.attendance1 || 0}
-                                                            onChange={(e) => updateScore(student.id, 'attendance1', e.target.value)}
-                                                            min="0" max="5"
-                                                            style={{ width: 55 }}
-                                                            onKeyDown={(e) => handleKeyDown(e, idx, 0, 'attendance1')}
-                                                        />
-                                                    </td>
-                                                    <td>
-                                                        <input
-                                                            ref={el => inputRefs.current[`${idx}_homework1`] = el}
-                                                            type="number"
-                                                            value={sRatings.homework1 || 0}
-                                                            onChange={(e) => updateScore(student.id, 'homework1', e.target.value)}
-                                                            min="0" max="10"
-                                                            style={{ width: 55 }}
-                                                            onKeyDown={(e) => handleKeyDown(e, idx, 1, 'homework1')}
-                                                        />
-                                                    </td>
-                                                    <td>
-                                                        <input
-                                                            ref={el => inputRefs.current[`${idx}_current1`] = el}
-                                                            type="number"
-                                                            value={sRatings.current1 || 0}
-                                                            onChange={(e) => updateScore(student.id, 'current1', e.target.value)}
-                                                            min="0" max="10"
-                                                            style={{ width: 55 }}
-                                                            onKeyDown={(e) => handleKeyDown(e, idx, 2, 'current1')}
-                                                        />
-                                                    </td>
-                                                    <td>
-                                                        <input
-                                                            ref={el => inputRefs.current[`${idx}_exam1`] = el}
-                                                            type="number"
-                                                            value={sRatings.exam1 || 0}
-                                                            onChange={(e) => updateScore(student.id, 'exam1', e.target.value)}
-                                                            min="0" max="10"
-                                                            style={{ width: 55 }}
-                                                            onKeyDown={(e) => handleKeyDown(e, idx, 3, 'exam1')}
-                                                        />
-                                                    </td>
-                                                    <td className="sum-cell">{firstSum}</td>
-                                                    <td>
-                                                        <input
-                                                            ref={el => inputRefs.current[`${idx}_attendance2`] = el}
-                                                            type="number"
-                                                            value={sRatings.attendance2 || 0}
-                                                            onChange={(e) => updateScore(student.id, 'attendance2', e.target.value)}
-                                                            min="0" max="5"
-                                                            style={{ width: 55 }}
-                                                            onKeyDown={(e) => handleKeyDown(e, idx, 4, 'attendance2')}
-                                                        />
-                                                    </td>
-                                                    <td>
-                                                        <input
-                                                            ref={el => inputRefs.current[`${idx}_homework2`] = el}
-                                                            type="number"
-                                                            value={sRatings.homework2 || 0}
-                                                            onChange={(e) => updateScore(student.id, 'homework2', e.target.value)}
-                                                            min="0" max="10"
-                                                            style={{ width: 55 }}
-                                                            onKeyDown={(e) => handleKeyDown(e, idx, 5, 'homework2')}
-                                                        />
-                                                    </td>
-                                                    <td>
-                                                        <input
-                                                            ref={el => inputRefs.current[`${idx}_current2`] = el}
-                                                            type="number"
-                                                            value={sRatings.current2 || 0}
-                                                            onChange={(e) => updateScore(student.id, 'current2', e.target.value)}
-                                                            min="0" max="10"
-                                                            style={{ width: 55 }}
-                                                            onKeyDown={(e) => handleKeyDown(e, idx, 6, 'current2')}
-                                                        />
-                                                    </td>
-                                                    <td>
-                                                        <input
-                                                            ref={el => inputRefs.current[`${idx}_exam2`] = el}
-                                                            type="number"
-                                                            value={sRatings.exam2 || 0}
-                                                            onChange={(e) => updateScore(student.id, 'exam2', e.target.value)}
-                                                            min="0" max="10"
-                                                            style={{ width: 55 }}
-                                                            onKeyDown={(e) => handleKeyDown(e, idx, 7, 'exam2')}
-                                                        />
-                                                    </td>
-                                                    <td className="sum-cell">{secondSum}</td>
-                                                    <td className="total-cell" style={{ fontWeight: 'bold', color: getGradeColor(total) }}>{total}</td>
-                                                    <td className="total-cell" style={{ color: getGradeColor(total) }}>{getGrade(total)}</td>
-                                                </tr>
-                                            )
-                                        })}
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colSpan="2"><strong>Средний балл:</strong></td>
-                                            <td colSpan="4"></td>
-                                            <td><strong>{avgFirst}</strong></td>
-                                            <td colSpan="4"></td>
-                                            <td><strong>{avgSecond}</strong></td>
-                                            <td><strong>{avgTotal}</strong></td>
-                                            <td></td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-
-                            <div style={{ marginTop: '20px', borderTop: '1px solid #ddd', paddingTop: '15px' }}>
-                                <button onClick={() => setShowHistory(!showHistory)} className="save-btn" style={{ background: '#6c757d' }}>
-                                    {showHistory ? 'Скрыть историю правок' : 'Показать историю правок'}
-                                </button>
-                                {showHistory && (
-                                    <div style={{ marginTop: '15px', maxHeight: '300px', overflowY: 'auto' }}>
-                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                            <thead>
-                                                <tr style={{ background: '#f1f1f1' }}>
-                                                    <th>Дата</th><th>Пользователь</th><th>Студент</th><th>Дисциплина</th><th>Поле</th><th>Было</th><th>Стало</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {history.map((item, i) => (
-                                                    <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                                                        <td>{item.date}</td>
-                                                        <td>{item.user}</td>
-                                                        <td>{item.student}</td>
-                                                        <td>{item.discipline}</td>
-                                                        <td>{item.field}</td>
-                                                        <td>{item.oldValue}</td>
-                                                        <td>{item.newValue}</td>
+                        activeSemester !== 'year' ? (
+                            /* ===== ТАБЛИЦА ДЛЯ 1 И 2 СЕМЕСТРА (С ИНПУТАМИ) ===== */
+                            <div className="card table-card">
+                                <div className="table-wrapper">
+                                    <table className="rating-table">
+                                        <thead>
+                                            <tr>
+                                                <th rowSpan="2">№</th>
+                                                <th rowSpan="2">ФИО</th>
+                                                <th colSpan="4" className="color-1">{activeSemester === '1' ? '1' : '3'} рейтинговая (макс.35)</th>
+                                                <th className="color-1">Сумма</th>
+                                                <th colSpan="4" className="color-2">{activeSemester === '1' ? '2' : '4'} рейтинговая (макс.35)</th>
+                                                <th className="color-2">Сумма</th>
+                                                <th rowSpan="2" className="color-3">Общая сумма</th>
+                                                <th rowSpan="2" className="color-3">Оценка</th>
+                                            </tr>
+                                            <tr>
+                                                <th className="color-1">Посещ.(5)</th>
+                                                <th className="color-1">ДЗ(10)</th>
+                                                <th className="color-1">Тек.контр.(10)</th>
+                                                <th className="color-1">КР(10)</th>
+                                                <th className="color-1">Сумма</th>
+                                                <th className="color-2">Посещ.(5)</th>
+                                                <th className="color-2">ДЗ(10)</th>
+                                                <th className="color-2">Тек.контр.(10)</th>
+                                                <th className="color-2">КР(10)</th>
+                                                <th className="color-2">Сумма</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredStudents.map((student, idx) => {
+                                                const sRatings = getStudentRatings(student.id)
+                                                const firstSum = getFirstSum(sRatings)
+                                                const secondSum = getSecondSum(sRatings)
+                                                const total = getTotal(sRatings)
+                                                return (
+                                                    <tr
+                                                        key={student.id}
+                                                        className={`rating-row ${activeRow === idx ? 'active' : ''}`}
+                                                        onClick={() => setActiveRow(idx)}
+                                                    >
+                                                        <td>{idx + 1}</td>
+                                                        <td>{student.name}</td>
+                                                        <td>
+                                                            <input
+                                                                ref={el => inputRefs.current[`${idx}_attendance1`] = el}
+                                                                type="number"
+                                                                value={sRatings.attendance1 || 0}
+                                                                onChange={(e) => updateScore(student.id, 'attendance1', e.target.value)}
+                                                                min="0" max="5"
+                                                                style={{ width: 55 }}
+                                                                onKeyDown={(e) => handleKeyDown(e, idx, 0, 'attendance1')}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                ref={el => inputRefs.current[`${idx}_homework1`] = el}
+                                                                type="number"
+                                                                value={sRatings.homework1 || 0}
+                                                                onChange={(e) => updateScore(student.id, 'homework1', e.target.value)}
+                                                                min="0" max="10"
+                                                                style={{ width: 55 }}
+                                                                onKeyDown={(e) => handleKeyDown(e, idx, 1, 'homework1')}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                ref={el => inputRefs.current[`${idx}_current1`] = el}
+                                                                type="number"
+                                                                value={sRatings.current1 || 0}
+                                                                onChange={(e) => updateScore(student.id, 'current1', e.target.value)}
+                                                                min="0" max="10"
+                                                                style={{ width: 55 }}
+                                                                onKeyDown={(e) => handleKeyDown(e, idx, 2, 'current1')}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                ref={el => inputRefs.current[`${idx}_exam1`] = el}
+                                                                type="number"
+                                                                value={sRatings.exam1 || 0}
+                                                                onChange={(e) => updateScore(student.id, 'exam1', e.target.value)}
+                                                                min="0" max="10"
+                                                                style={{ width: 55 }}
+                                                                onKeyDown={(e) => handleKeyDown(e, idx, 3, 'exam1')}
+                                                            />
+                                                        </td>
+                                                        <td className="sum-cell">{firstSum}</td>
+                                                        <td>
+                                                            <input
+                                                                ref={el => inputRefs.current[`${idx}_attendance2`] = el}
+                                                                type="number"
+                                                                value={sRatings.attendance2 || 0}
+                                                                onChange={(e) => updateScore(student.id, 'attendance2', e.target.value)}
+                                                                min="0" max="5"
+                                                                style={{ width: 55 }}
+                                                                onKeyDown={(e) => handleKeyDown(e, idx, 4, 'attendance2')}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                ref={el => inputRefs.current[`${idx}_homework2`] = el}
+                                                                type="number"
+                                                                value={sRatings.homework2 || 0}
+                                                                onChange={(e) => updateScore(student.id, 'homework2', e.target.value)}
+                                                                min="0" max="10"
+                                                                style={{ width: 55 }}
+                                                                onKeyDown={(e) => handleKeyDown(e, idx, 5, 'homework2')}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                ref={el => inputRefs.current[`${idx}_current2`] = el}
+                                                                type="number"
+                                                                value={sRatings.current2 || 0}
+                                                                onChange={(e) => updateScore(student.id, 'current2', e.target.value)}
+                                                                min="0" max="10"
+                                                                style={{ width: 55 }}
+                                                                onKeyDown={(e) => handleKeyDown(e, idx, 6, 'current2')}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                ref={el => inputRefs.current[`${idx}_exam2`] = el}
+                                                                type="number"
+                                                                value={sRatings.exam2 || 0}
+                                                                onChange={(e) => updateScore(student.id, 'exam2', e.target.value)}
+                                                                min="0" max="10"
+                                                                style={{ width: 55 }}
+                                                                onKeyDown={(e) => handleKeyDown(e, idx, 7, 'exam2')}
+                                                            />
+                                                        </td>
+                                                        <td className="sum-cell">{secondSum}</td>
+                                                        <td className="total-cell" style={{ fontWeight: 'bold', color: getGradeColor(total) }}>{total}</td>
+                                                        <td className="total-cell" style={{ color: getGradeColor(total) }}>{getGrade(total)}</td>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
+                                                )
+                                            })}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colSpan="2"><strong>Средний балл:</strong></td>
+                                                <td colSpan="4"></td>
+                                                <td><strong>{avgFirst}</strong></td>
+                                                <td colSpan="4"></td>
+                                                <td><strong>{avgSecond}</strong></td>
+                                                <td><strong>{avgTotal}</strong></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
+                                <div style={{ marginTop: '20px', borderTop: '1px solid #ddd', paddingTop: '15px' }}>
+                                    <button onClick={() => setShowHistory(!showHistory)} className="save-btn" style={{ background: '#6c757d' }}>
+                                        {showHistory ? 'Скрыть историю правок' : 'Показать историю правок'}
+                                    </button>
+                                    {showHistory && (
+                                        <div style={{ marginTop: '15px', maxHeight: '300px', overflowY: 'auto' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                <thead>
+                                                    <tr style={{ background: '#f1f1f1' }}>
+                                                        <th>Дата</th><th>Пользователь</th><th>Студент</th><th>Дисциплина</th><th>Поле</th><th>Было</th><th>Стало</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {history.map((item, i) => (
+                                                        <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                                                            <td>{item.date}</td>
+                                                            <td>{item.user}</td>
+                                                            <td>{item.student}</td>
+                                                            <td>{item.discipline}</td>
+                                                            <td>{item.field}</td>
+                                                            <td>{item.oldValue}</td>
+                                                            <td>{item.newValue}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            /* ===== ТАБЛИЦА ЗА ГОД (БЕЗ ИНПУТОВ) ===== */
+                            <div className="card table-card">
+                                <div className="table-wrapper">
+                                    <table className="rating-table">
+                                        <thead>
+                                            <tr>
+                                                <th rowSpan="2">№</th>
+                                                <th rowSpan="2">ФИО</th>
+                                                <th colSpan="2">Итоги по семестрам</th>
+                                                <th rowSpan="2" className="color-3">Общая сумма за год</th>
+                                                <th rowSpan="2" className="color-3">Средний балл</th>
+                                                <th rowSpan="2" className="color-3">Итоговая оценка</th>
+                                            </tr>
+                                            <tr>
+                                                <th className="color-1">1 семестр (макс.70)</th>
+                                                <th className="color-2">2 семестр (макс.70)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredStudents.map((student, idx) => {
+                                                // Получаем баллы за 1-й и 2-й семестры
+                                                const sem1Total = getSemesterTotal(student.id, '1')
+                                                const sem2Total = getSemesterTotal(student.id, '2')
+
+                                                // Считаем общую сумму и среднее
+                                                const totalYear = sem1Total + sem2Total
+                                                const avgYear = Math.round(totalYear / 2)
+
+                                                return (
+                                                    <tr
+                                                        key={student.id}
+                                                        className={`rating-row ${activeRow === idx ? 'active' : ''}`}
+                                                        onClick={() => setActiveRow(idx)}
+                                                    >
+                                                        <td>{idx + 1}</td>
+                                                        <td>{student.name}</td>
+                                                        <td className="sum-cell">{sem1Total}</td>
+                                                        <td className="sum-cell">{sem2Total}</td>
+                                                        <td className="total-cell" style={{ fontWeight: 'bold' }}>{totalYear}</td>
+                                                        <td className="total-cell" style={{ fontWeight: 'bold' }}>{avgYear}</td>
+                                                        <td className="total-cell" style={{ color: getGradeColor(Number(avgYear)) }}>
+                                                            {getGrade(Number(avgYear))}
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )
                     ) : (
                         <div className="card empty-table">Выберите группу, дисциплину и преподавателя для отображения рейтинга</div>
                     )}

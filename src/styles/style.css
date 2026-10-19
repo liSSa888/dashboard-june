@@ -498,3 +498,28 @@ body {
     font-family: 'Times New Roman', Times, serif;
     font-size: 15.5px;
 }
+
+tbody tr {
+    transition: 0.2s;
+}
+
+tbody tr:hover {
+    background: #fdf2f8;
+}
+
+/* ========== ПОДСВЕТКА АКТИВНОЙ СТРОКИ ========== */
+.rating-row {
+    transition: background-color 0.2s;
+    cursor: pointer;
+    /* Чтобы завуч понимал, что на строку можно кликнуть */
+}
+
+/* Когда строка активна - она становится нежно-розовой */
+.rating-row.active {
+    background-color: #fdf2f8 !important;
+}
+
+/* Делаем ячейки прозрачными внутри активной строки, чтобы их родной фон не перекрывал розовый */
+.rating-row.active td {
+    background-color: transparent !important;
+}

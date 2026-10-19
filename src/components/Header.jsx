@@ -130,6 +130,7 @@ function Header() {
 
         <Link to="/profile" className="setting-link">
           <img className="icon-setting" src="/images/icon2.png" alt="Профиль" />
+          {/* <img className="icon-setting" src="/images/setti.png" alt="Профиль" /> */}
         </Link>
       </div>
     </header>
@@ -137,3 +138,4 @@ function Header() {
 }
 
 export default Header
+
