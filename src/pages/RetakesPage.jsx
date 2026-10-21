@@ -10,6 +10,8 @@ import '../styles/retakes.css'
 
 
 function RetakesPage() {
+    const [activeSemester, setActiveSemester] = useState('1')
+    const [isYearly, setIsYearly] = useState(false)
     const [groups, setGroups] = useState([])
     const [teachers, setTeachers] = useState([])
     const [students, setStudents] = useState([])
@@ -69,9 +71,26 @@ function RetakesPage() {
         }
     }, [selectedGroup, disciplinesByGroupAll])
 
-    const getStudentRatings = (studentId, disciplineName) => {
-        const key = `${studentId}_${disciplineName}`
-        return ratings[key] || { attendance1: 0, homework1: 0, current1: 0, exam1: 0, attendance2: 0, homework2: 0, current2: 0, exam2: 0 }
+    // Проверяем, является ли выбранная дисциплина годовой и берем семестр из localStorage
+    useEffect(() => {
+        if (selectedGroup && selectedDiscipline && disciplinesByGroupAll[selectedGroup]) {
+            const disc = disciplinesByGroupAll[selectedGroup].find(d => d.name === selectedDiscipline)
+            setIsYearly(disc?.isYearly || false)
+        }
+    }, [selectedGroup, selectedDiscipline, disciplinesByGroupAll])
+
+    const getSemesterRatings = (studentId, disciplineName, semester) => {
+        const key = `${studentId}_${disciplineName}_${semester}`
+        return ratings[key] || {
+            attendance1: 0, homework1: 0, current1: 0, exam1: 0,
+            attendance2: 0, homework2: 0, current2: 0, exam2: 0
+        }
+    }
+
+    const calculateSum = (sRatings) => {
+        const first = Number(sRatings.attendance1) + Number(sRatings.homework1) + Number(sRatings.current1) + Number(sRatings.exam1)
+        const second = Number(sRatings.attendance2) + Number(sRatings.homework2) + Number(sRatings.current2) + Number(sRatings.exam2)
+        return first + second
     }
 
     const getTotal = (sRatings) => {
@@ -84,8 +103,24 @@ function RetakesPage() {
         ? students
             .filter(s => {
                 if (s.group !== selectedGroup) return false
-                const sRatings = getStudentRatings(s.id, selectedDiscipline)
-                return getTotal(sRatings) < threshold
+
+                if (isYearly) {
+                    if (activeSemester === 'year') {
+                        // Если выбрано "За год" — считаем средний балл
+                        const sem1 = calculateSum(getSemesterRatings(s.id, selectedDiscipline, '1'))
+                        const sem2 = calculateSum(getSemesterRatings(s.id, selectedDiscipline, '2'))
+                        const avgYear = (sem1 + sem2) / 2
+                        return avgYear < threshold
+                    } else {
+                        // Если выбран конкретный семестр — смотрим только его
+                        const sem = calculateSum(getSemesterRatings(s.id, selectedDiscipline, activeSemester))
+                        return sem < threshold
+                    }
+                } else {
+                    // Если дисциплина семестровая — всегда смотрим только 1 семестр
+                    const sem = calculateSum(getSemesterRatings(s.id, selectedDiscipline, '1'))
+                    return sem < threshold
+                }
             })
             .sort((a, b) => a.name.localeCompare(b.name))
         : []
@@ -108,7 +143,7 @@ function RetakesPage() {
 
     const handlePrint = () => window.print()
 
-    // ========== ЭКСПОРТ В PDF ==========
+
     const exportToPDF = () => {
         const element = document.querySelector('.document-sheet')
         if (!element) {
@@ -227,6 +262,32 @@ function RetakesPage() {
                         />
                         <button className="filter-btn" onClick={handleShow}>Показать должников</button>
                     </section>
+
+                    {isYearly && (
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '15px', marginBottom: '15px' }}>
+                            <button
+                                className="save-btn"
+                                onClick={() => setActiveSemester('1')}
+                                style={{ background: activeSemester === '1' ? '#7c73f6' : '#ccc' }}
+                            >
+                                1 семестр
+                            </button>
+                            <button
+                                className="save-btn"
+                                onClick={() => setActiveSemester('2')}
+                                style={{ background: activeSemester === '2' ? '#7c73f6' : '#ccc' }}
+                            >
+                                2 семестр
+                            </button>
+                            <button
+                                className="save-btn"
+                                onClick={() => setActiveSemester('year')}
+                                style={{ background: activeSemester === 'year' ? '#7c73f6' : '#ccc' }}
+                            >
+                                За год
+                            </button>
+                        </div>
+                    )}
 
                     <div className="card filter-card" style={{ justifyContent: 'flex-start', gap: '15px', flexWrap: 'wrap', marginTop: '10px' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>

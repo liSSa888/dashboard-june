@@ -18,7 +18,7 @@ function StudentLoginPage() {
             s.recordBook === password
         )
         if (!student) {
-            setError('Неверное ФИО или номер зачётной книжки')
+            setError('Неверная фамилия или номер зачётной книжки')
             return
         }
 
@@ -36,7 +36,7 @@ function StudentLoginPage() {
 
                 <form onSubmit={handleLogin} className="login-form">
                     <div className="form-group">
-                        <label>ФИО (логин)</label>
+                        <label>Фамилия (логин)</label>
                         <input
                             type="text"
                             placeholder="Нагорова"

@@ -6,6 +6,7 @@ import '../styles/style.css'
 
 function DashboardPage() {
     const navigate = useNavigate()
+    const [controlType, setControlType] = useState('Экзамен')
     const [selectedGroup, setSelectedGroup] = useState('')
     const [selectedDiscipline, setSelectedDiscipline] = useState('')
     const [selectedTeacher, setSelectedTeacher] = useState('')
@@ -39,10 +40,18 @@ function DashboardPage() {
 
             const dates = await loadVedomostDates()
             setDatesByVedomost(dates)
-
         }
         loadData()
     }, [])
+
+    // Загружаем сохраненный тип контроля при выборе группы и дисциплины
+    useEffect(() => {
+        if (selectedGroup && selectedDiscipline) {
+            const key = `${selectedGroup}_${selectedDiscipline}`
+            const savedTypes = JSON.parse(localStorage.getItem('controlTypes') || '{}')
+            setControlType(savedTypes[key] || 'Экзамен')
+        }
+    }, [selectedGroup, selectedDiscipline])
 
     useEffect(() => {
         const savedGroup = localStorage.getItem('searchGroup')
@@ -80,6 +89,7 @@ function DashboardPage() {
         }
         localStorage.setItem('reportsGroup', selectedGroup)
         localStorage.setItem('reportsType', type)
+        localStorage.setItem('reportsSemester', activeSemester)
         navigate('/reports')
     }
 
@@ -94,6 +104,7 @@ function DashboardPage() {
         }
         localStorage.setItem('retakesGroup', selectedGroup)
         localStorage.setItem('retakesDiscipline', selectedDiscipline)
+        localStorage.setItem('retakesSemester', activeSemester)
         navigate('/retakes')
     }
 
@@ -101,13 +112,11 @@ function DashboardPage() {
         ? sortedStudents.filter(s => s.group === selectedGroup)
         : []
 
-
     const currentDisciplineObj = disciplinesForGroup.find(d => d.name === selectedDiscipline)
     const isYearlyDiscipline = currentDisciplineObj?.isYearly || false
 
-
     const getStudentRatings = (studentId) => {
-        const key = `${studentId}_${selectedDiscipline}_${activeSemester}` // <-- ДОБАВИЛИ СЕМЕСТР
+        const key = `${studentId}_${selectedDiscipline}_${activeSemester}`
         const existing = ratings[key]
         if (existing) return existing
         return {
@@ -134,24 +143,68 @@ function DashboardPage() {
 
     const getTotal = (sRatings) => getFirstSum(sRatings) + getSecondSum(sRatings)
 
+    const getSemesterTotal = (studentId, semester) => {
+        const key = `${studentId}_${selectedDiscipline}_${semester}`
+        const sRatings = ratings[key]
+        if (!sRatings) return 0
+        return getTotal(sRatings)
+    }
+
+    // --- ФУНКЦИИ ДЛЯ СЕМЕСТРА ---
+    const getExamScore = (studentId) => {
+        const key = `${studentId}_${selectedDiscipline}_${activeSemester}_exam_score`
+        return Number(ratings[key]) || 0
+    }
+    const getRetakeScore = (studentId) => {
+        const key = `${studentId}_${selectedDiscipline}_${activeSemester}_retake_score`
+        return Number(ratings[key]) || 0
+    }
+    const getFinalTotalForSemester = (studentId, sRatings) => {
+        return getTotal(sRatings) + getExamScore(studentId) + getRetakeScore(studentId)
+    }
+
+    // --- ФУНКЦИИ ДЛЯ ГОДА ---
+    const getYearExamScore = (studentId) => {
+        const key = `${studentId}_${selectedDiscipline}_year_exam_score`
+        return Number(ratings[key]) || 0
+    }
+    const getYearRetakeScore = (studentId) => {
+        const key = `${studentId}_${selectedDiscipline}_year_retake_score`
+        return Number(ratings[key]) || 0
+    }
+
+    // Средний рейтинг = (Сумма 1 + Сумма 2) / 2. Округляем в большую сторону.
+    const getYearlyRatingAvg = (studentId) => {
+        const sem1 = getSemesterTotal(studentId, '1')
+        const sem2 = getSemesterTotal(studentId, '2')
+        return Math.ceil((sem1 + sem2) / 2)
+    }
+
+    // Общий итог = Средний рейтинг + Экзамен + Пересдача
+    const getFinalTotalForYear = (studentId) => {
+        return getYearlyRatingAvg(studentId) + getYearExamScore(studentId) + getYearRetakeScore(studentId)
+    }
+
+    // --- ОЦЕНКИ И ЦВЕТА ---
+    const getFinalGrade = (total) => {
+        if (total >= 91) return '5 (Отлично)'
+        if (total >= 81) return '4 (Хорошо)'
+        if (total >= 66) return '3 (Удовлетворительно)'
+        return '2 (Пересдача)'
+    }
+    const getFinalGradeColor = (total) => {
+        if (total >= 91) return '#2e7d32'
+        if (total >= 81) return '#1976d2'
+        if (total >= 66) return '#ed6c02'
+        return '#d32f2f'
+    }
+
     const getGrade = (total) => {
         if (total >= 61) return '5 (Отлично)'
         if (total >= 51) return '4 (Хорошо)'
         if (total >= 36) return '3 (Удовлетворительно)'
         return '2 (Пересдача)'
     }
-
-    // Вспомогательная функция: получает сумму баллов за конкретный семестр (1 или 2)
-    const getSemesterTotal = (studentId, semester) => {
-        const key = `${studentId}_${selectedDiscipline}_${semester}`
-        const sRatings = ratings[key]
-
-        if (!sRatings) return 0 // Если оценок нет, возвращаем 0
-
-        // Считаем сумму по тем же правилам (1-й и 2-й рейтинг внутри семестра)
-        return getTotal(sRatings)
-    }
-
     const getGradeColor = (total) => {
         if (total >= 61) return '#2e7d32'
         if (total >= 51) return '#1976d2'
@@ -181,6 +234,26 @@ function DashboardPage() {
             date: new Date().toLocaleString(),
             user: localStorage.getItem('username') || 'admin'
         }, ...prev])
+    }
+
+    const updateExamScore = async (studentId, value) => {
+        let numValue = parseInt(value, 10) || 0;
+        const suffix = activeSemester === 'year' ? 'year' : activeSemester;
+        const key = `${studentId}_${selectedDiscipline}_${suffix}_exam_score`;
+
+        const newRatingsAll = { ...ratings, [key]: numValue };
+        setRatings(newRatingsAll);
+        await saveRatings(newRatingsAll);
+    }
+
+    const updateRetakeScore = async (studentId, value) => {
+        let numValue = parseInt(value, 10) || 0;
+        const suffix = activeSemester === 'year' ? 'year' : activeSemester;
+        const key = `${studentId}_${selectedDiscipline}_${suffix}_retake_score`;
+
+        const newRatingsAll = { ...ratings, [key]: numValue };
+        setRatings(newRatingsAll);
+        await saveRatings(newRatingsAll);
     }
 
     const handleSave = async () => {
@@ -285,25 +358,13 @@ function DashboardPage() {
                         <h1>Управление рейтингом</h1>
                         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                             <button className="save-btn" onClick={handleSave}>Сохранить</button>
-                            <button
-                                className="save-btn"
-                                onClick={() => goToReports('exam')}
-                                style={{ background: '#d75562' }}
-                            >
+                            <button className="save-btn" onClick={() => goToReports('exam')} style={{ background: '#d75562' }}>
                                 📄 Экзаменационная ведомость
                             </button>
-                            <button
-                                className="save-btn"
-                                onClick={() => goToReports('credit')}
-                                style={{ background: '#78c289' }}
-                            >
+                            <button className="save-btn" onClick={() => goToReports('credit')} style={{ background: '#78c289' }}>
                                 📄 Зачётная ведомость
                             </button>
-                            <button
-                                className="save-btn"
-                                onClick={goToRetakes}
-                                style={{ background: '#f6a35e' }}
-                            >
+                            <button className="save-btn" onClick={goToRetakes} style={{ background: '#f6a35e' }}>
                                 🔄 Пересдачи
                             </button>
                         </div>
@@ -323,7 +384,6 @@ function DashboardPage() {
                             {teachersForGroup.map((t, index) => <option key={index}>{t}</option>)}
                         </select>
                     </div>
-
 
                     {selectedGroup && selectedDiscipline && selectedTeacher && isYearlyDiscipline && (
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
@@ -369,12 +429,27 @@ function DashboardPage() {
                                 <p><strong>Преподаватель:</strong> {selectedTeacher}</p>
                                 <p>
                                     <strong>Дата:</strong>{' '}
-                                    <input
-                                        className="date-input"
-                                        type="date"
-                                        value={currentDate}
-                                        onChange={handleDateChange}
-                                    />
+                                    <input className="date-input" type="date" value={currentDate} onChange={handleDateChange} />
+                                </p>
+                                <p>
+                                    <strong>Тип контроля:</strong>{' '}
+                                    <select
+                                        className="year-select"
+                                        value={controlType}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setControlType(val);
+                                            const key = `${selectedGroup}_${selectedDiscipline}`;
+                                            const savedTypes = JSON.parse(localStorage.getItem('controlTypes') || '{}');
+                                            savedTypes[key] = val;
+                                            localStorage.setItem('controlTypes', JSON.stringify(savedTypes));
+                                        }}
+                                    >
+                                        <option value="Экзамен">Экзамен</option>
+                                        <option value="Зачет">Зачет</option>
+                                        <option value="Дифференцированный зачет">Дифференцированный зачет</option>
+                                        <option value="Защита проекта">Защита проекта</option>
+                                    </select>
                                 </p>
                             </div>
                         </section>
@@ -382,7 +457,7 @@ function DashboardPage() {
 
                     {selectedGroup && selectedDiscipline && selectedTeacher && filteredStudents.length > 0 ? (
                         activeSemester !== 'year' ? (
-                            /* ===== ТАБЛИЦА ДЛЯ 1 И 2 СЕМЕСТРА (С ИНПУТАМИ) ===== */
+                            /* ===== ТАБЛИЦА ДЛЯ 1 И 2 СЕМЕСТРА ===== */
                             <div className="card table-card">
                                 <div className="table-wrapper">
                                     <table className="rating-table">
@@ -395,7 +470,15 @@ function DashboardPage() {
                                                 <th colSpan="4" className="color-2">{activeSemester === '1' ? '2' : '4'} рейтинговая (макс.35)</th>
                                                 <th className="color-2">Сумма</th>
                                                 <th rowSpan="2" className="color-3">Общая сумма</th>
-                                                <th rowSpan="2" className="color-3">Оценка</th>
+                                                <th rowSpan="2" className="color-3">Допуск к оценке:</th>
+                                                {(!isYearlyDiscipline) && (
+                                                    <>
+                                                        <th rowSpan="2" className="color-3">{controlType} (макс. 30)</th>
+                                                        <th rowSpan="2" className="color-3">Пересдача</th>
+                                                        <th rowSpan="2" className="color-3">Общий итог</th>
+                                                        <th rowSpan="2" className="color-3">Итоговая оценка</th>
+                                                    </>
+                                                )}
                                             </tr>
                                             <tr>
                                                 <th className="color-1">Посещ.(5)</th>
@@ -516,6 +599,35 @@ function DashboardPage() {
                                                         <td className="sum-cell">{secondSum}</td>
                                                         <td className="total-cell" style={{ fontWeight: 'bold', color: getGradeColor(total) }}>{total}</td>
                                                         <td className="total-cell" style={{ color: getGradeColor(total) }}>{getGrade(total)}</td>
+
+                                                        {(!isYearlyDiscipline) && (
+                                                            <>
+                                                                <td>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={getExamScore(student.id) || 0}
+                                                                        onChange={(e) => updateExamScore(student.id, e.target.value)}
+                                                                        min="0" max="30"
+                                                                        style={{ width: 55 }}
+                                                                    />
+                                                                </td>
+                                                                <td>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={getRetakeScore(student.id) || 0}
+                                                                        onChange={(e) => updateRetakeScore(student.id, e.target.value)}
+                                                                        min="0" max="30"
+                                                                        style={{ width: 55 }}
+                                                                    />
+                                                                </td>
+                                                                <td className="total-cell" style={{ fontWeight: 'bold' }}>
+                                                                    {getFinalTotalForSemester(student.id, sRatings)}
+                                                                </td>
+                                                                <td className="total-cell" style={{ color: getFinalGradeColor(getFinalTotalForSemester(student.id, sRatings)) }}>
+                                                                    {getFinalGrade(getFinalTotalForSemester(student.id, sRatings))}
+                                                                </td>
+                                                            </>
+                                                        )}
                                                     </tr>
                                                 )
                                             })}
@@ -533,7 +645,6 @@ function DashboardPage() {
                                         </tfoot>
                                     </table>
                                 </div>
-
                                 <div style={{ marginTop: '20px', borderTop: '1px solid #ddd', paddingTop: '15px' }}>
                                     <button onClick={() => setShowHistory(!showHistory)} className="save-btn" style={{ background: '#6c757d' }}>
                                         {showHistory ? 'Скрыть историю правок' : 'Показать историю правок'}
@@ -565,7 +676,8 @@ function DashboardPage() {
                                 </div>
                             </div>
                         ) : (
-                            /* ===== ТАБЛИЦА ЗА ГОД (БЕЗ ИНПУТОВ) ===== */
+                            /* ===== ТАБЛИЦА ЗА ГОД ===== */
+                            /* ===== ТАБЛИЦА ЗА ГОД ===== */
                             <div className="card table-card">
                                 <div className="table-wrapper">
                                     <table className="rating-table">
@@ -574,8 +686,16 @@ function DashboardPage() {
                                                 <th rowSpan="2">№</th>
                                                 <th rowSpan="2">ФИО</th>
                                                 <th colSpan="2">Итоги по семестрам</th>
-                                                <th rowSpan="2" className="color-3">Общая сумма за год</th>
+
+                                                {/* ОСТАВЛЯЕМ СТАРЫЕ КОЛОНКИ */}
+                                                <th rowSpan="2" className="color-3">Общая сумма</th>
                                                 <th rowSpan="2" className="color-3">Средний балл</th>
+                                                <th rowSpan="2" className="color-3">Допуск к оценке:</th>
+
+                                                {/* ДОБАВЛЯЕМ НОВЫЕ */}
+                                                <th rowSpan="2" className="color-3">{controlType} (макс. 30)</th>
+                                                <th rowSpan="2" className="color-3">Пересдача</th>
+                                                <th rowSpan="2" className="color-3">Общий итог</th>
                                                 <th rowSpan="2" className="color-3">Итоговая оценка</th>
                                             </tr>
                                             <tr>
@@ -585,13 +705,18 @@ function DashboardPage() {
                                         </thead>
                                         <tbody>
                                             {filteredStudents.map((student, idx) => {
-                                                // Получаем баллы за 1-й и 2-й семестры
                                                 const sem1Total = getSemesterTotal(student.id, '1')
                                                 const sem2Total = getSemesterTotal(student.id, '2')
-
-                                                // Считаем общую сумму и среднее
                                                 const totalYear = sem1Total + sem2Total
-                                                const avgYear = Math.round(totalYear / 2)
+
+                                                // Средний балл (округленный вверх)
+                                                const avgRating = getYearlyRatingAvg(student.id)
+
+                                                // Общий итог (Средний балл + Экзамен + Пересдача)
+                                                const finalTotal = getFinalTotalForYear(student.id)
+
+                                                // Итоговая оценка (от 66, 81, 91)
+                                                const finalGrade = getFinalGrade(finalTotal)
 
                                                 return (
                                                     <tr
@@ -603,10 +728,46 @@ function DashboardPage() {
                                                         <td>{student.name}</td>
                                                         <td className="sum-cell">{sem1Total}</td>
                                                         <td className="sum-cell">{sem2Total}</td>
+
+                                                        {/* 1. Общая сумма (макс 140) */}
                                                         <td className="total-cell" style={{ fontWeight: 'bold' }}>{totalYear}</td>
-                                                        <td className="total-cell" style={{ fontWeight: 'bold' }}>{avgYear}</td>
-                                                        <td className="total-cell" style={{ color: getGradeColor(Number(avgYear)) }}>
-                                                            {getGrade(Number(avgYear))}
+
+                                                        {/* 2. Средний балл (макс 70) */}
+                                                        <td className="total-cell" style={{ fontWeight: 'bold' }}>{avgRating}</td>
+
+                                                        {/* 3. Допуск к оценке (по среднему баллу) */}
+                                                        <td className="total-cell" style={{ color: getGradeColor(avgRating) }}>
+                                                            {getGrade(avgRating)}
+                                                        </td>
+
+                                                        {/* 4. Экзамен/Зачет */}
+                                                        <td>
+                                                            <input
+                                                                type="number"
+                                                                value={getYearExamScore(student.id) || 0}
+                                                                onChange={(e) => updateExamScore(student.id, e.target.value)}
+                                                                min="0" max="30"
+                                                                style={{ width: 55 }}
+                                                            />
+                                                        </td>
+
+                                                        {/* 5. Пересдача */}
+                                                        <td>
+                                                            <input
+                                                                type="number"
+                                                                value={getYearRetakeScore(student.id) || 0}
+                                                                onChange={(e) => updateRetakeScore(student.id, e.target.value)}
+                                                                min="0" max="30"
+                                                                style={{ width: 55 }}
+                                                            />
+                                                        </td>
+
+                                                        {/* 6. Общий итог */}
+                                                        <td className="total-cell" style={{ fontWeight: 'bold' }}>{finalTotal}</td>
+
+                                                        {/* 7. Итоговая оценка */}
+                                                        <td className="total-cell" style={{ color: getFinalGradeColor(finalTotal) }}>
+                                                            {finalGrade}
                                                         </td>
                                                     </tr>
                                                 )
