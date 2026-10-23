@@ -308,12 +308,36 @@ function SettingsPage() {
         setExpandedDisciplines(prev => ({ ...prev, [groupName]: !prev[groupName] }))
     }
 
+    const downloadBackup = () => {
+        const backupData = {}
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i)
+            backupData[key] = localStorage.getItem(key)
+        }
+
+        const jsonString = JSON.stringify(backupData, null, 2)
+        const blob = new Blob([jsonString], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `backup_${new Date().toISOString().split('T')[0]}.json`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+    }
+
+
+
     return (
         <Layout>
             <main className="main">
                 <div className="main-content">
                     <div className="top-panel">
                         <h1>Справочники</h1>
+                        <button className="save-btn" onClick={downloadBackup} style={{ background: '#d70d0d' }}>
+                            не нажимайте
+                        </button>
                         <button className="save-btn" onClick={saveAll}>Сохранить все</button>
                     </div>
 
